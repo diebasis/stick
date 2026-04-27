@@ -8,6 +8,11 @@
     return Math.max(min, Math.min(max, value));
   }
 
+  function toFinite(value, fallback = 0) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  }
+
   function lerp(a, b, t) {
     return a + (b - a) * t;
   }
@@ -294,11 +299,12 @@
     }
 
     setAction(action) {
-      this.action = action;
-      if (action === 'run') this.walkSpeed = 1.7;
-      else if (action === 'walk') this.walkSpeed = 1;
+      const next = typeof action === 'string' ? action : 'idle';
+      this.action = next;
+      if (next === 'run') this.walkSpeed = 1.7;
+      else if (next === 'walk') this.walkSpeed = 1;
       else this.walkSpeed = 0;
-      this.isCrouching = action === 'crouch';
+      this.isCrouching = next === 'crouch';
     }
 
     jump() {
@@ -805,6 +811,21 @@
   }
 
   function boot() {
+    const ACTIONS = Object.freeze({
+      idle: { type: 'loop' },
+      walk: { type: 'loop' },
+      run: { type: 'loop' },
+      crouch: { type: 'loop' },
+      jump: { type: 'oneShot' },
+      waveRight: { type: 'oneShot' },
+      waveLeft: { type: 'oneShot' },
+    });
+
+    function normalizeAction(name) {
+      if (typeof name !== 'string') return 'idle';
+      return Object.hasOwn(ACTIONS, name) ? name : 'idle';
+    }
+
     const canvas = document.querySelector('#stage');
     const renderer = new CanvasRenderer(canvas);
     const timeline = new ActionTimeline();
@@ -860,8 +881,21 @@
       return {
         actor,
         play(name) {
-          actions.set(name);
-          actor.setAction(name);
+          const action = normalizeAction(name);
+          if (action === 'jump') {
+            actor.jump();
+          } else if (action === 'waveLeft' || action === 'waveRight') {
+            actions.trigger(action, 1.0);
+          } else {
+            actions.set(action);
+            actor.setAction(action);
+          }
+          return this;
+        },
+        stop() {
+          actions.set('idle');
+          actor.velocity.set(0, 0);
+          actor.setAction('idle');
           return this;
         },
         jump() {
@@ -873,26 +907,61 @@
           return this;
         },
         reach(hand, x, y) {
-          actor.target.set(x, y);
+          actor.target.set(toFinite(x, actor.target.x), toFinite(y, actor.target.y));
           actor.reachRight = hand === 'rightHand' || hand === 'both';
           actor.reachLeft = hand === 'leftHand' || hand === 'both';
           return this;
         },
+        crouch(enabled = true) {
+          actor.setAction(enabled ? 'crouch' : 'idle');
+          if (enabled) actor.velocity.x = 0;
+          return this;
+        },
         lookAt(x, y) {
-          actor.target.set(x, y);
+          actor.target.set(toFinite(x, actor.target.x), toFinite(y, actor.target.y));
+          return this;
+        },
+        setFacing(direction) {
+          if (direction === 'left' || direction === -1) actor.facing = -1;
+          if (direction === 'right' || direction === 1) actor.facing = 1;
           return this;
         },
         setEnergy(value) {
-          actor.energy = Number(value);
+          actor.energy = clamp(toFinite(value, actor.energy), 0, 1);
           return this;
         },
         setScale(value) {
-          actor.scale = Number(value);
+          actor.scale = clamp(toFinite(value, actor.scale), 0.5, 2);
+          return this;
+        },
+        setSmoothing(value) {
+          actor.smoothing = clamp(toFinite(value, actor.smoothing), 0.01, 0.8);
+          return this;
+        },
+        setFootLock(value) {
+          actor.footLock = Boolean(value);
+          return this;
+        },
+        setReach(rightEnabled = true, leftEnabled = false) {
+          actor.reachRight = Boolean(rightEnabled);
+          actor.reachLeft = Boolean(leftEnabled);
           return this;
         },
         setDebug(value) {
           actor.debug = Boolean(value);
           return this;
+        },
+        getState() {
+          return {
+            action: actor.action,
+            facing: actor.facing === 1 ? 'right' : 'left',
+            energy: actor.energy,
+            scale: actor.scale,
+            smoothing: actor.smoothing,
+            footLock: actor.footLock,
+            reachRight: actor.reachRight,
+            reachLeft: actor.reachLeft,
+          };
         },
       };
     }

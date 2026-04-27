@@ -38,14 +38,22 @@ No console do navegador:
 ```js
 StickEngineDemo.play('walk');
 StickEngineDemo.play('run');
+StickEngineDemo.stop();
 StickEngineDemo.jump();
+StickEngineDemo.crouch(true);
+StickEngineDemo.crouch(false);
 StickEngineDemo.wave('right');
 StickEngineDemo.reach('rightHand', 620, 180);
 StickEngineDemo.reach('both', 620, 180);
 StickEngineDemo.lookAt(500, 200);
+StickEngineDemo.setFacing('left');
 StickEngineDemo.setEnergy(0.9);
 StickEngineDemo.setScale(1.15);
+StickEngineDemo.setSmoothing(0.22);
+StickEngineDemo.setFootLock(true);
+StickEngineDemo.setReach(true, false);
 StickEngineDemo.setDebug(true);
+StickEngineDemo.getState();
 ```
 
 ## Arquivos
@@ -84,3 +92,25 @@ Ajustes finos desta versão:
 ## Organic v4
 
 Correção do ciclo das pernas: a fase aérea agora leva o pé de trás para frente na direção do deslocamento. A fase de apoio continua passando de frente para trás em relação ao corpo, como em uma marcha em esteira, para dar sensação de contato com o chão.
+
+## Validação do estado atual (auditoria rápida)
+
+Checklist do que o código atual já cobre:
+
+- ✅ Respiração em idle (`breathe` + oscilação corporal em repouso).
+- ✅ Andar e correr com ciclo de pernas e braços procedural.
+- ✅ Pulo com antecipação, fase aérea e aterrissagem.
+- ✅ Agachar via teclado (`S`) e botão com alternância.
+- ✅ Aceno acionável por botão, teclado e API.
+- ✅ Olhar e alcance por mouse, com opção de mão esquerda espelhada.
+- ✅ IK de braços e pernas com pole vectors (evita inversões de cotovelo/joelho).
+- ✅ Exibição de debug de juntas e alvos.
+- ✅ Recentralização por botão.
+- ✅ Controles por teclado + painel.
+
+Lacunas em relação a engine “completa” (ainda não implementadas):
+
+- ❌ Separação total entre pacote de engine e demo.
+- ❌ Sistema formal de poses com import/export JSON.
+- ❌ Timeline autoral, editor visual e biblioteca de movimentos versionada.
+- ❌ Testes automatizados.
