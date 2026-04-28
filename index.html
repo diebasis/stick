@@ -3,93 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stick Engine Prototype</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>Stick Engine</title>
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; margin: 2rem; background: #070c18; color: #f3f7ff; }
+    a { color: #7ddcff; }
+  </style>
 </head>
 <body>
-  <main class="app-shell">
-    <section class="hero-panel">
-      <div class="title-block">
-        <p class="eyebrow">Prototype / Browser Canvas</p>
-        <h1>Stick Engine</h1>
-        <p class="subtitle">Boneco palito articulado, controlável por comandos simples, com caminhada procedural, mira por mouse, IK para alcançar alvos e renderização direta no browser.</p>
-      </div>
-
-      <div class="status-grid" id="statusGrid" aria-live="polite">
-        <div><span>Modo</span><strong id="statusMode">Inicializando</strong></div>
-        <div><span>FPS</span><strong id="statusFps">--</strong></div>
-        <div><span>API</span><strong>Vanilla JS</strong></div>
-      </div>
-    </section>
-
-    <section class="workspace">
-      <aside class="controls" aria-label="Controles do protótipo">
-        <div class="control-card">
-          <h2>Ações</h2>
-          <div class="button-grid">
-            <button data-action="idle" class="is-active">Parado</button>
-            <button data-action="walk">Andar</button>
-            <button data-action="run">Correr</button>
-            <button data-action="jump">Pular</button>
-            <button data-action="crouch">Agachar</button>
-            <button data-action="waveRight">Acenar</button>
-          </div>
-        </div>
-
-        <div class="control-card">
-          <h2>Controle fino</h2>
-          <label class="toggle-row">
-            <input id="reachToggle" type="checkbox" checked />
-            <span>Mão direita alcança o mouse</span>
-          </label>
-          <label class="toggle-row">
-            <input id="leftReachToggle" type="checkbox" />
-            <span>Mão esquerda espelha o alvo</span>
-          </label>
-          <label class="toggle-row">
-            <input id="footLockToggle" type="checkbox" checked />
-            <span>Pés com IK no chão</span>
-          </label>
-          <label class="toggle-row">
-            <input id="debugToggle" type="checkbox" />
-            <span>Mostrar juntas e alvos</span>
-          </label>
-        </div>
-
-        <div class="control-card">
-          <h2>Parâmetros</h2>
-          <label>
-            Energia do movimento
-            <input id="energySlider" type="range" min="0" max="1" value="0.72" step="0.01" />
-          </label>
-          <label>
-            Escala do personagem
-            <input id="scaleSlider" type="range" min="0.72" max="1.34" value="1" step="0.01" />
-          </label>
-          <label>
-            Suavização do alvo
-            <input id="smoothSlider" type="range" min="0.03" max="0.45" value="0.18" step="0.01" />
-          </label>
-        </div>
-
-        <div class="control-card help-card">
-          <h2>Teclado</h2>
-          <p><kbd>A</kbd>/<kbd>D</kbd> move, <kbd>Shift</kbd> corre, <kbd>W</kbd> pula, <kbd>S</kbd> agacha, <kbd>Espaço</kbd> acena.</p>
-          <p>O mouse controla o olhar. Com a opção ativa, a mão direita tenta alcançar o cursor.</p>
-        </div>
-      </aside>
-
-      <section class="stage-wrap">
-        <canvas id="stage" width="960" height="560" aria-label="Área de demonstração da Stick Engine"></canvas>
-        <div id="bootError" class="boot-error" hidden></div>
-        <div class="stage-caption">
-          <span>Arraste o mouse pela área. Clique nos botões ou use o teclado.</span>
-          <button id="resetBtn" type="button">Recentralizar</button>
-        </div>
-      </section>
-    </section>
-  </main>
-
-  <script defer src="js/stick-engine.js"></script>
+  <h1>Stick Engine</h1>
+  <p>Demo principal:</p>
+  <p><a href="./demo/index.html">Abrir demo/laboratório</a></p>
+  <p>Documentação da API: <a href="./docs/API.md">docs/API.md</a></p>
 </body>
 </html>

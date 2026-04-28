@@ -1,0 +1,2566 @@
+diff --git a/README.md b/README.md
+index d11207e631341abea5f25489cc3b4953cc4c2bd6..569c965a226964212abd0274eb5e3c8620bafcfd 100644
+--- a/README.md
++++ b/README.md
+@@ -1,86 +1,100 @@
+-# Stick Engine Prototype — versão corrigida
++# Stick Engine (experimental)
+ 
+-Protótipo de engine de boneco palito articulado, renderizado diretamente no navegador com Canvas 2D.
++Engine de animação procedural para boneco palito em Canvas 2D.
+ 
+-## Correção principal desta versão
++## Entrega desta rodada (Fases 1 → 4)
+ 
+-A versão anterior usava ES Modules (`<script type="module">` com `import/export`). Isso funciona bem em servidor HTTP, mas pode falhar quando o arquivo é aberto diretamente com `file://`, por causa das regras de segurança/CORS dos módulos no navegador. Esta versão usa um bundle JavaScript clássico (`js/stick-engine.js`) carregado com `<script defer>`, sem imports, para funcionar tanto em servidor quanto ao abrir o `index.html` localmente.
++### Fase 1 — Fechar o núcleo atual
++- Estados revisados e organizados (`idle`, `walk`, `run`, `crouch`, `jump`, `wave`).
++- Caminhada/corrida estabilizadas com ciclo consistente e correção de direção de stride.
++- Código limpo em camadas (`engine/` + `demo/` + `docs/` + `examples/`).
++- Separação engine/demo concluída.
++- API básica documentada.
+ 
+-## Como usar
++### Fase 2 — Poses e ações
++- Formato JSON de pose definido (`torsoLeanDeg`, `headTiltDeg`, `armLift`, `hipDrop`).
++- Biblioteca inicial de poses (`DEFAULT_POSES`).
++- Sistema de transição/blend por track de ações com `blendIn/blendOut`.
++- Ações sobrepostas por camada (`base` + `upper`), ex.: correr + acenar.
+ 
+-Abra `index.html` no navegador ou publique a pasta inteira no servidor.
++### Fase 3 — Editor visual (versão de laboratório)
++- Drag de juntas no demo (modo editor) para ajustar pose bias.
++- Salvar pose atual.
++- Carregar poses via JSON.
++- Exportar poses JSON.
++- Pré-visualizar pose selecionada.
+ 
+-Se quiser servir localmente:
++### Fase 4 — Engine reutilizável
++- Engine empacotada como biblioteca browser/global (`window.StickEngine`) e CommonJS (`module.exports`).
++- Exemplo de múltiplos personagens (`examples/multi-character.html`).
++- Documentação de API em `docs/API.md`.
++- Suporte a múltiplos bonecos simultâneos na mesma cena.
++- Publicação em `adriano.app` **não executada aqui** (depende do deploy/infra do seu ambiente).
+ 
+-```bash
+-python -m http.server 8080
+-```
++---
+ 
+-Depois acesse:
++## Estrutura
+ 
+ ```txt
+-http://localhost:8080
++/
++  engine/
++    stick-engine.js
++  demo/
++    index.html
++    style.css
++    demo.js
++  examples/
++    multi-character.html
++  docs/
++    API.md
++  index.html
+ ```
+ 
+-## Controles
+-
+-- A/D: mover
+-- Shift: correr
+-- W: pular
+-- S: agachar
+-- Espaço: acenar
+-- Mouse: controlar olhar e alvo da mão
++---
+ 
+-## API pública
+-
+-No console do navegador:
+-
+-```js
+-StickEngineDemo.play('walk');
+-StickEngineDemo.play('run');
+-StickEngineDemo.jump();
+-StickEngineDemo.wave('right');
+-StickEngineDemo.reach('rightHand', 620, 180);
+-StickEngineDemo.reach('both', 620, 180);
+-StickEngineDemo.lookAt(500, 200);
+-StickEngineDemo.setEnergy(0.9);
+-StickEngineDemo.setScale(1.15);
+-StickEngineDemo.setDebug(true);
+-```
++## Como rodar
+ 
+-## Arquivos
+-
+-```txt
+-stick-engine-prototype-fixed/
+-  index.html
+-  README.md
+-  css/style.css
+-  js/stick-engine.js
++```bash
++python -m http.server 8080
+ ```
+ 
++- Demo principal: `http://localhost:8080/demo/`
++- Exemplo multi-character: `http://localhost:8080/examples/multi-character.html`
+ 
+-## Versão organic-v2
+-
+-Ajustes finos desta versão:
+-- contraste corrigido entre palco e personagem;
+-- correção do overlay vermelho de erro que podia aparecer mesmo com `hidden`;
+-- quadril reposicionado acima do chão, evitando pernas dobradas de forma artificial;
+-- caminhada/corrida com ciclo mais natural: bob vertical, sway do quadril, contra-movimento de tronco e braços;
+-- salto com antecipação, fase aérea e aterrissagem;
+-- agachamento interpolado, sem quebra brusca;
+-- linhas do boneco com contorno escuro + núcleo claro para leitura visual.
++---
+ 
+-## Versão organic-v4
++## API rápida
+ 
+-Ajustes finos desta versão:
+-- correção da inversão dos joelhos ao andar para esquerda/direita;
+-- correção da inversão dos cotovelos ao virar o personagem;
+-- inclusão de pole vectors internos para braços e pernas, estabilizando a direção preferida de dobra;
+-- caminhada espelhada corretamente pelo `facing`, sem reaproveitar a lógica corporal da direita ao andar para a esquerda;
+-- botão `Agachar` agora alterna entre agachar/desagachar;
+-- tecla `S` agora desagacha ao soltar, mantendo o personagem parado no lugar.
++```js
++const engine = StickEngine.create(canvas);
++
++engine.play('walk');
++engine.overlay('wave');
++engine.jump();
++engine.crouch(true);
++engine.lookAt(x, y);
++engine.reach('both', x, y);
++engine.setFacing('left');
++engine.setEnergy(0.85);
++engine.setScale(1.1);
++engine.setSmoothing(0.2);
++engine.setDebug(true);
++
++engine.registerPose('custom', {
++  torsoLeanDeg: 4,
++  headTiltDeg: -1,
++  armLift: 8,
++  hipDrop: 2,
++});
++
++const json = engine.exportPosesJSON();
++engine.importPosesJSON(json);
++```
+ 
++---
+ 
+-## Organic v4
++## Observações importantes
+ 
+-Correção do ciclo das pernas: a fase aérea agora leva o pé de trás para frente na direção do deslocamento. A fase de apoio continua passando de frente para trás em relação ao corpo, como em uma marcha em esteira, para dar sensação de contato com o chão.
++- O projeto está funcional como laboratório robusto, mas ainda não é um editor de animação completo estilo Spine/Rive.
++- O editor visual desta entrega é intencionalmente simples (MVP), focado em acelerar iteração de poses.
++- Para produção, próximos passos naturais: timeline detalhada por keyframes, persistência versionada de animações, testes automatizados e pipeline de build/release.
+diff --git a/css/style.css b/css/style.css
+deleted file mode 100644
+index c9dcec0e9401af9a6b35eeb2ee64db69a105c319..0000000000000000000000000000000000000000
+--- a/css/style.css
++++ /dev/null
+@@ -1,286 +0,0 @@
+-:root {
+-  color-scheme: dark;
+-  --bg: #070c18;
+-  --panel: #11182d;
+-  --panel-2: #172033;
+-  --panel-3: #0c1324;
+-  --line: rgba(150, 180, 255, 0.18);
+-  --text: #f3f7ff;
+-  --muted: #b6c5dd;
+-  --accent: #78d7ff;
+-  --accent-2: #ffd166;
+-  --danger: #ff7a7a;
+-  --radius: 18px;
+-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+-}
+-
+-* { box-sizing: border-box; }
+-
+-html, body {
+-  width: 100%;
+-  min-height: 100%;
+-  margin: 0;
+-  background:
+-    radial-gradient(circle at top left, rgba(120, 215, 255, 0.14), transparent 28rem),
+-    radial-gradient(circle at 80% 0%, rgba(255, 209, 102, 0.10), transparent 26rem),
+-    var(--bg);
+-  color: var(--text);
+-}
+-
+-body {
+-  overflow: hidden;
+-}
+-
+-button, input {
+-  font: inherit;
+-}
+-
+-.app-shell {
+-  height: 100vh;
+-  max-height: 768px;
+-  padding: 10px 18px 16px;
+-  display: grid;
+-  grid-template-rows: 160px minmax(0, 1fr);
+-  gap: 14px;
+-}
+-
+-.hero-panel,
+-.workspace,
+-.control-card,
+-.stage-wrap,
+-.status-grid > div {
+-  border: 1px solid var(--line);
+-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+-}
+-
+-.hero-panel {
+-  border-radius: 20px;
+-  padding: 20px 22px;
+-  background: linear-gradient(135deg, rgba(17, 24, 45, 0.98), rgba(13, 19, 36, 0.96));
+-  display: grid;
+-  grid-template-columns: 1fr auto;
+-  align-items: center;
+-  gap: 18px;
+-}
+-
+-.eyebrow {
+-  margin: 0 0 4px;
+-  color: var(--accent);
+-  font-size: 0.76rem;
+-  font-weight: 900;
+-  text-transform: uppercase;
+-  letter-spacing: 0.08em;
+-}
+-
+-h1 {
+-  margin: 0;
+-  font-size: clamp(2.4rem, 4vw, 3.5rem);
+-  line-height: 0.96;
+-  letter-spacing: -0.06em;
+-}
+-
+-.subtitle {
+-  max-width: 760px;
+-  margin: 10px 0 0;
+-  color: var(--muted);
+-  line-height: 1.45;
+-}
+-
+-.status-grid {
+-  display: grid;
+-  grid-template-columns: repeat(3, minmax(96px, 1fr));
+-  gap: 12px;
+-}
+-
+-.status-grid > div {
+-  min-width: 112px;
+-  border-radius: 16px;
+-  padding: 12px;
+-  background: rgba(255, 255, 255, 0.07);
+-}
+-
+-.status-grid span {
+-  display: block;
+-  color: var(--muted);
+-  font-size: 0.76rem;
+-  margin-bottom: 4px;
+-}
+-
+-.status-grid strong {
+-  display: block;
+-  font-size: 0.95rem;
+-}
+-
+-.workspace {
+-  min-height: 0;
+-  border-radius: 22px;
+-  padding: 14px;
+-  background: rgba(255, 255, 255, 0.055);
+-  display: grid;
+-  grid-template-columns: 318px minmax(0, 1fr);
+-  gap: 14px;
+-}
+-
+-.controls {
+-  min-height: 0;
+-  overflow-y: auto;
+-  padding-right: 6px;
+-  display: grid;
+-  gap: 12px;
+-  align-content: start;
+-  scrollbar-color: rgba(255,255,255,.24) transparent;
+-}
+-
+-.control-card {
+-  border-radius: var(--radius);
+-  background: linear-gradient(180deg, rgba(17, 24, 45, 0.96), rgba(13, 19, 36, 0.94));
+-  padding: 14px;
+-}
+-
+-.control-card h2 {
+-  margin: 0 0 12px;
+-  font-size: 0.94rem;
+-}
+-
+-.button-grid {
+-  display: grid;
+-  grid-template-columns: repeat(2, minmax(0, 1fr));
+-  gap: 8px;
+-}
+-
+-button {
+-  border: 1px solid rgba(255,255,255,.16);
+-  border-radius: 12px;
+-  color: var(--text);
+-  background: rgba(255,255,255,.08);
+-  padding: 9px 10px;
+-  cursor: pointer;
+-  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+-}
+-
+-button:hover,
+-button:focus-visible {
+-  transform: translateY(-1px);
+-  border-color: rgba(120, 215, 255, 0.58);
+-  background: rgba(120, 215, 255, 0.15);
+-  outline: none;
+-}
+-
+-button.is-active {
+-  color: #06111f;
+-  border-color: transparent;
+-  background: linear-gradient(135deg, var(--accent), #e0f7ff);
+-  font-weight: 800;
+-}
+-
+-.toggle-row {
+-  display: grid;
+-  grid-template-columns: 24px 1fr;
+-  align-items: center;
+-  gap: 10px;
+-  margin: 9px 0;
+-  color: var(--muted);
+-}
+-
+-input[type="checkbox"] {
+-  width: 18px;
+-  height: 18px;
+-  accent-color: var(--accent);
+-}
+-
+-.control-card label:not(.toggle-row) {
+-  display: grid;
+-  gap: 7px;
+-  margin: 13px 0;
+-  color: var(--muted);
+-  font-size: 0.82rem;
+-}
+-
+-input[type="range"] {
+-  width: 100%;
+-  accent-color: var(--accent);
+-}
+-
+-.help-card p {
+-  margin: 8px 0;
+-  color: var(--muted);
+-  line-height: 1.45;
+-  font-size: 0.84rem;
+-}
+-
+-kbd {
+-  display: inline-block;
+-  padding: 2px 7px;
+-  border: 1px solid rgba(255,255,255,.26);
+-  border-radius: 6px;
+-  color: var(--text);
+-  background: rgba(255,255,255,.10);
+-  box-shadow: inset 0 -1px 0 rgba(0,0,0,.32);
+-}
+-
+-.stage-wrap {
+-  position: relative;
+-  min-width: 0;
+-  min-height: 0;
+-  border-radius: var(--radius);
+-  background: #090f1e;
+-  overflow: hidden;
+-  display: grid;
+-  grid-template-rows: minmax(0, 1fr) 44px;
+-}
+-
+-#stage {
+-  display: block;
+-  width: 100%;
+-  height: 100%;
+-  min-height: 360px;
+-  background: linear-gradient(180deg, #071122, #030712);
+-}
+-
+-.stage-caption {
+-  min-height: 44px;
+-  padding: 8px 12px;
+-  border-top: 1px solid var(--line);
+-  display: flex;
+-  justify-content: space-between;
+-  align-items: center;
+-  gap: 12px;
+-  color: var(--muted);
+-  font-size: 0.86rem;
+-  background: rgba(7, 12, 24, 0.78);
+-}
+-
+-.stage-caption button {
+-  flex: 0 0 auto;
+-  padding: 7px 10px;
+-}
+-
+-.boot-error {
+-  position: absolute;
+-  inset: 14px 14px 58px;
+-  display: grid;
+-  place-items: center;
+-  text-align: center;
+-  padding: 20px;
+-  color: #190909;
+-  background: rgba(255, 122, 122, 0.92);
+-  border: 1px solid rgba(255,255,255,.35);
+-  border-radius: 16px;
+-  font-weight: 700;
+-  z-index: 5;
+-}
+-
+-@media (max-width: 1100px) {
+-  body { overflow: auto; }
+-  .app-shell { height: auto; max-height: none; grid-template-rows: auto auto; }
+-  .hero-panel { grid-template-columns: 1fr; }
+-  .status-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+-  .workspace { grid-template-columns: 1fr; }
+-  .controls { max-height: none; overflow: visible; }
+-  .stage-wrap { height: 560px; }
+-}
+-
+-
+-.boot-error[hidden] {
+-  display: none !important;
+-}
+diff --git a/demo/demo.js b/demo/demo.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..02371f054c2b6a409aa705a1a73e26dfc0598d24
+--- /dev/null
++++ b/demo/demo.js
+@@ -0,0 +1,200 @@
++(() => {
++  'use strict';
++
++  const canvas = document.querySelector('#stage');
++  const statusEl = document.querySelector('#status');
++  const characterSelect = document.querySelector('#characterSelect');
++  const poseSelect = document.querySelector('#poseSelect');
++  const poseJson = document.querySelector('#poseJson');
++
++  const engine = window.StickEngine.create(canvas);
++  const pointer = { active: false, x: 0, y: 0, draggingJoint: null };
++  const keys = new Set();
++
++  function refreshCharacterSelect() {
++    const current = engine.activeCharacterId;
++    characterSelect.innerHTML = engine.characters.map(c => `<option value="${c.id}">${c.id}</option>`).join('');
++    characterSelect.value = current;
++  }
++
++  function refreshPoseSelect() {
++    const current = poseSelect.value || 'idle';
++    poseSelect.innerHTML = engine.listPoses().map(name => `<option value="${name}">${name}</option>`).join('');
++    if (engine.listPoses().includes(current)) poseSelect.value = current;
++  }
++
++  function selectedCharacter() { return engine.getCharacter(); }
++
++  function applyKeyboard() {
++    const c = selectedCharacter();
++    if (!c) return;
++    const left = keys.has('a') || keys.has('arrowleft');
++    const right = keys.has('d') || keys.has('arrowright');
++    const run = keys.has('shift');
++    const crouch = keys.has('s') || keys.has('arrowdown');
++
++    if (crouch) { engine.crouch(true); return; }
++    if (left || right) {
++      c.facing = right ? 1 : -1;
++      engine.play(run ? 'run' : 'walk');
++      return;
++    }
++    const base = c.track.topBase()?.name;
++    if (base === 'walk' || base === 'run' || base === 'crouch') engine.play('idle');
++  }
++
++  function findNearestJoint(character, x, y, radius = 20) {
++    let best = null;
++    let bestDist = radius * radius;
++    for (const [name, p] of Object.entries(character.joints)) {
++      const dx = p.x - x;
++      const dy = p.y - y;
++      const d = dx * dx + dy * dy;
++      if (d < bestDist) { bestDist = d; best = name; }
++    }
++    return best;
++  }
++
++  function updateStatus() {
++    const state = engine.getState();
++    statusEl.textContent = JSON.stringify(state, null, 2);
++  }
++
++  function autoLook(now) {
++    if (pointer.active) return;
++    engine.lookAt(engine.renderer.width * 0.58 + Math.sin(now * 0.001) * 120, engine.renderer.height * 0.38 + Math.cos(now * 0.0014) * 44);
++  }
++
++  // Ações
++  document.querySelectorAll('[data-action]').forEach((button) => {
++    button.addEventListener('click', () => {
++      const action = button.dataset.action;
++      if (action === 'jump') engine.jump();
++      else if (action === 'wave') engine.overlay('wave');
++      else engine.play(action);
++    });
++  });
++
++  // Personagens
++  document.querySelector('#addCharacterBtn').addEventListener('click', () => {
++    const offset = (engine.characters.length - 1) * 80;
++    const c = engine.addCharacter({ x: engine.renderer.width * 0.5 + offset, y: engine.renderer.height * 0.78, scale: 1 });
++    engine.selectCharacter(c.id);
++    refreshCharacterSelect();
++  });
++
++  document.querySelector('#removeCharacterBtn').addEventListener('click', () => {
++    if (engine.characters.length <= 1) return;
++    engine.removeCharacter(engine.activeCharacterId);
++    refreshCharacterSelect();
++  });
++
++  characterSelect.addEventListener('change', () => engine.selectCharacter(characterSelect.value));
++
++  // Parâmetros
++  document.querySelector('#energy').addEventListener('input', (e) => engine.setEnergy(e.target.value));
++  document.querySelector('#scale').addEventListener('input', (e) => engine.setScale(e.target.value));
++  document.querySelector('#smoothing').addEventListener('input', (e) => engine.setSmoothing(e.target.value));
++
++  // Pose Editor
++  document.querySelector('#savePoseBtn').addEventListener('click', () => {
++    const name = poseSelect.value || 'customPose';
++    const c = selectedCharacter();
++    if (!c) return;
++    const def = {
++      torsoLeanDeg: c.poseBias.torsoLeanDeg ?? 0,
++      headTiltDeg: c.poseBias.headTiltDeg ?? 0,
++      armLift: c.poseBias.armLift ?? 0,
++      hipDrop: c.poseBias.hipDrop ?? 0,
++    };
++    engine.registerPose(name, def);
++    refreshPoseSelect();
++    poseJson.value = JSON.stringify(engine.getPose(name), null, 2);
++  });
++
++  document.querySelector('#previewPoseBtn').addEventListener('click', () => {
++    const name = poseSelect.value;
++    const p = engine.getPose(name);
++    if (!p) return;
++    const c = selectedCharacter();
++    c.poseBias = { ...p };
++  });
++
++  document.querySelector('#loadPoseBtn').addEventListener('click', () => {
++    try {
++      engine.importPosesJSON(poseJson.value);
++      refreshPoseSelect();
++    } catch (error) {
++      alert(`JSON inválido: ${error.message}`);
++    }
++  });
++
++  document.querySelector('#exportPoseBtn').addEventListener('click', () => {
++    poseJson.value = engine.exportPosesJSON(true);
++  });
++
++  poseSelect.addEventListener('change', () => {
++    const pose = engine.getPose(poseSelect.value);
++    poseJson.value = pose ? JSON.stringify(pose, null, 2) : '';
++  });
++
++  // Input
++  window.addEventListener('keydown', (event) => {
++    const key = event.key.toLowerCase();
++    keys.add(key);
++    if ([' ', 'w', 'a', 's', 'd', 'arrowleft', 'arrowright', 'arrowdown'].includes(key)) event.preventDefault();
++    if (key === 'w') engine.jump();
++    if (key === ' ') engine.overlay('wave');
++  });
++  window.addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
++
++  canvas.addEventListener('pointermove', (event) => {
++    const rect = canvas.getBoundingClientRect();
++    pointer.x = event.clientX - rect.left;
++    pointer.y = event.clientY - rect.top;
++    pointer.active = true;
++
++    const c = selectedCharacter();
++    if (!c) return;
++
++    if (document.querySelector('#editorToggle').checked && pointer.draggingJoint) {
++      // editor simples: drag altera poseBias por heurística
++      if (pointer.draggingJoint === 'head') c.poseBias.headTiltDeg = (pointer.x - c.joints.neck.x) * 0.2;
++      if (pointer.draggingJoint.startsWith('hand')) c.poseBias.armLift = clamp((c.joints.hip.y - pointer.y) * 0.05, -20, 30);
++      if (pointer.draggingJoint === 'hip') c.poseBias.hipDrop = clamp((pointer.y - c.joints.hip.y) * 0.2, -25, 35);
++      return;
++    }
++
++    engine.lookAt(pointer.x, pointer.y);
++  });
++
++  canvas.addEventListener('pointerdown', () => {
++    const c = selectedCharacter();
++    if (!c) return;
++    if (document.querySelector('#editorToggle').checked) {
++      pointer.draggingJoint = findNearestJoint(c, pointer.x, pointer.y, 28);
++    }
++  });
++
++  canvas.addEventListener('pointerup', () => { pointer.draggingJoint = null; });
++  canvas.addEventListener('pointerleave', () => { pointer.active = false; pointer.draggingJoint = null; });
++
++  // Helpers
++  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
++
++  // Loop hooks
++  engine.onBeforeFrame = ({ now }) => {
++    autoLook(now);
++    applyKeyboard();
++  };
++  engine.onAfterFrame = () => updateStatus();
++
++  // Init
++  refreshCharacterSelect();
++  refreshPoseSelect();
++  poseJson.value = engine.exportPosesJSON(true);
++  engine.setDebug(true);
++  engine.start();
++
++  window.StickEngineDemo = engine;
++})();
+diff --git a/demo/index.html b/demo/index.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..bc1f1fd0f45638afafe7144668bbe7bb0039969b
+--- /dev/null
++++ b/demo/index.html
+@@ -0,0 +1,74 @@
++<!doctype html>
++<html lang="pt-BR">
++<head>
++  <meta charset="utf-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1" />
++  <title>Stick Engine Lab</title>
++  <link rel="stylesheet" href="./style.css" />
++</head>
++<body>
++  <main class="layout">
++    <aside class="panel">
++      <h1>Stick Engine Lab</h1>
++      <p class="muted">Fases 1-4: runtime, poses/ações, editor visual básico e engine reutilizável.</p>
++
++      <section>
++        <h2>Ações</h2>
++        <div class="grid">
++          <button data-action="idle">Idle</button>
++          <button data-action="walk">Walk</button>
++          <button data-action="run">Run</button>
++          <button data-action="jump">Jump</button>
++          <button data-action="crouch">Crouch</button>
++          <button data-action="wave">Wave (overlay)</button>
++        </div>
++      </section>
++
++      <section>
++        <h2>Personagens</h2>
++        <div class="row">
++          <button id="addCharacterBtn">+ Add</button>
++          <button id="removeCharacterBtn">- Remove</button>
++        </div>
++        <select id="characterSelect"></select>
++      </section>
++
++      <section>
++        <h2>Parâmetros</h2>
++        <label>Energia <input id="energy" type="range" min="0" max="1" step="0.01" value="0.72" /></label>
++        <label>Escala <input id="scale" type="range" min="0.6" max="1.6" step="0.01" value="1" /></label>
++        <label>Suavização <input id="smoothing" type="range" min="0.03" max="0.45" step="0.01" value="0.18" /></label>
++      </section>
++
++      <section>
++        <h2>Editor de Poses</h2>
++        <label><input id="editorToggle" type="checkbox" /> Ativar drag de juntas</label>
++        <label>Pose atual
++          <select id="poseSelect"></select>
++        </label>
++        <div class="row">
++          <button id="savePoseBtn">Salvar pose</button>
++          <button id="previewPoseBtn">Prévia pose</button>
++        </div>
++        <textarea id="poseJson" rows="10"></textarea>
++        <div class="row">
++          <button id="loadPoseBtn">Carregar JSON</button>
++          <button id="exportPoseBtn">Exportar JSON</button>
++        </div>
++      </section>
++
++      <section class="status">
++        <h2>Status</h2>
++        <div id="status"></div>
++      </section>
++    </aside>
++
++    <section class="stage">
++      <canvas id="stage" width="1100" height="700"></canvas>
++    </section>
++  </main>
++
++  <script src="../engine/stick-engine.js"></script>
++  <script src="./demo.js"></script>
++</body>
++</html>
+diff --git a/demo/style.css b/demo/style.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..88f53416cc6000ff6285276c40b7a94b7374143e
+--- /dev/null
++++ b/demo/style.css
+@@ -0,0 +1,29 @@
++:root {
++  color-scheme: dark;
++  --bg: #050a14;
++  --panel: #0f1728;
++  --line: rgba(134, 171, 255, 0.2);
++  --text: #f5f8ff;
++  --muted: #b5c3df;
++  --accent: #7ddcff;
++  font-family: Inter, system-ui, sans-serif;
++}
++* { box-sizing: border-box; }
++body { margin: 0; background: radial-gradient(circle at 20% 10%, rgba(125,220,255,.12), transparent 30rem), var(--bg); color: var(--text); }
++.layout { display: grid; grid-template-columns: 360px 1fr; height: 100vh; gap: 12px; padding: 12px; }
++.panel { border: 1px solid var(--line); border-radius: 16px; padding: 14px; overflow: auto; background: rgba(15,23,40,.95); }
++.stage { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
++#stage { width: 100%; height: 100%; display: block; background: #040913; }
++h1 { margin: 0 0 6px; }
++h2 { margin: 0 0 8px; font-size: .95rem; }
++section { margin-bottom: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: rgba(255,255,255,.02); }
++.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
++.row { display: flex; gap: 8px; margin-top: 8px; }
++button, select, textarea, input { width: 100%; font: inherit; }
++button { border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: var(--text); border-radius: 10px; padding: 8px; cursor: pointer; }
++button:hover { border-color: var(--accent); background: rgba(125,220,255,.14); }
++label { display: grid; gap: 6px; margin: 8px 0; color: var(--muted); font-size: .86rem; }
++textarea, select { background: rgba(0,0,0,.3); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
++input[type='range'] { accent-color: var(--accent); }
++.muted { color: var(--muted); margin-top: 0; }
++.status #status { font-family: ui-monospace, monospace; font-size: .82rem; color: var(--muted); white-space: pre-wrap; }
+diff --git a/docs/API.md b/docs/API.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..217c01e1d981ddd03e6ffde393e495098b2f3f95
+--- /dev/null
++++ b/docs/API.md
+@@ -0,0 +1,79 @@
++# Stick Engine API (v1.0.0-experimental)
++
++## Inicialização
++
++```js
++const engine = StickEngine.create(canvas, {
++  boundsPadding: 80,
++  poses: { ... },
++  actions: { ... }
++});
++```
++
++## Runtime principal
++
++- `engine.start()` / `engine.pause()` / `engine.step(dt)`
++- `engine.onBeforeFrame = ({dt, now, engine}) => {}`
++- `engine.onAfterFrame = ({dt, now, engine}) => {}`
++
++## Personagens
++
++- `engine.addCharacter(options)`
++- `engine.removeCharacter(id)`
++- `engine.getCharacter(id?)`
++- `engine.selectCharacter(id)`
++
++## Ações
++
++- `engine.play(name, characterId?)`
++- `engine.overlay(name, characterId?)` (ações sobrepostas, ex.: wave)
++- `engine.jump(characterId?)`
++- `engine.crouch(enabled, characterId?)`
++- `engine.stop(characterId?)`
++
++## IK e alvo
++
++- `engine.lookAt(x, y, characterId?)`
++- `engine.reach('rightHand'|'leftHand'|'both', x, y, characterId?)`
++
++## Ajustes
++
++- `engine.setFacing('left'|'right'|-1|1, characterId?)`
++- `engine.setEnergy(value, characterId?)`
++- `engine.setScale(value, characterId?)`
++- `engine.setSmoothing(value, characterId?)`
++- `engine.setFootLock(boolean, characterId?)`
++- `engine.setReach(rightEnabled, leftEnabled, characterId?)`
++- `engine.setDebug(boolean, characterId?)`
++
++## Poses
++
++- `engine.listPoses()`
++- `engine.getPose(name)`
++- `engine.registerPose(name, poseDef)`
++- `engine.removePose(name)`
++- `engine.exportPosesJSON(pretty?)`
++- `engine.importPosesJSON(jsonText)`
++
++### Formato JSON de pose
++
++```json
++{
++  "idle": {
++    "torsoLeanDeg": 0,
++    "headTiltDeg": 0,
++    "armLift": 0,
++    "hipDrop": 0
++  },
++  "wave": {
++    "torsoLeanDeg": 2,
++    "headTiltDeg": 0,
++    "armLift": 14,
++    "hipDrop": 0
++  }
++}
++```
++
++## Estado
++
++- `engine.getState(characterId?)` retorna FPS, personagem ativo, ação base, ação overlay e parâmetros.
+diff --git a/engine/stick-engine.js b/engine/stick-engine.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..d2929d59360f29fcd569f870b033c564850d1c15
+--- /dev/null
++++ b/engine/stick-engine.js
+@@ -0,0 +1,539 @@
++(() => {
++  'use strict';
++
++  const TAU = Math.PI * 2;
++  const DEG = Math.PI / 180;
++
++  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
++  function lerp(a, b, t) { return a + (b - a) * t; }
++  function damp(current, target, smoothing, dt) {
++    const t = 1 - Math.pow(1 - clamp(smoothing, 0, 1), dt * 60);
++    return lerp(current, target, t);
++  }
++  function finite(v, fallback = 0) {
++    const n = Number(v);
++    return Number.isFinite(n) ? n : fallback;
++  }
++
++  class Vec2 {
++    constructor(x = 0, y = 0) { this.x = x; this.y = y; }
++    set(x, y) { this.x = finite(x, 0); this.y = finite(y, 0); return this; }
++    copy(v) { this.x = v.x; this.y = v.y; return this; }
++    clone() { return new Vec2(this.x, this.y); }
++    add(v) { this.x += v.x; this.y += v.y; return this; }
++    sub(v) { this.x -= v.x; this.y -= v.y; return this; }
++    mul(s) { this.x *= s; this.y *= s; return this; }
++    len() { return Math.hypot(this.x, this.y); }
++    lenSq() { return this.x * this.x + this.y * this.y; }
++    normalize() { const l = this.len(); if (l > 1e-8) { this.x /= l; this.y /= l; } return this; }
++    angle() { return Math.atan2(this.y, this.x); }
++    static add(a, b) { return new Vec2(a.x + b.x, a.y + b.y); }
++    static sub(a, b) { return new Vec2(a.x - b.x, a.y - b.y); }
++    static mul(v, s) { return new Vec2(v.x * s, v.y * s); }
++    static lerp(a, b, t) { return new Vec2(lerp(a.x, b.x, t), lerp(a.y, b.y, t)); }
++    static fromAngle(rad, len = 1) { return new Vec2(Math.cos(rad) * len, Math.sin(rad) * len); }
++  }
++
++  function normalizeAngle(angle) {
++    let a = angle;
++    while (a <= -Math.PI) a += TAU;
++    while (a > Math.PI) a -= TAU;
++    return a;
++  }
++
++  function solveTwoBone(root, target, upperLength, lowerLength, bend = 1, pole = null) {
++    const delta = Vec2.sub(target, root);
++    const rawDistance = delta.len();
++    const maxReach = upperLength + lowerLength - 0.0001;
++    const minReach = Math.abs(upperLength - lowerLength) + 0.0001;
++    const safeDistance = clamp(rawDistance || 0.0001, minReach, maxReach);
++    const baseAngle = rawDistance > 0.0001 ? Math.atan2(delta.y, delta.x) : Math.PI / 2;
++    const endDistance = Math.min(rawDistance || maxReach, maxReach);
++    const end = Vec2.add(root, Vec2.fromAngle(baseAngle, endDistance));
++
++    const cosAngle = clamp(
++      (upperLength * upperLength + safeDistance * safeDistance - lowerLength * lowerLength) / (2 * upperLength * safeDistance),
++      -1,
++      1
++    );
++
++    let bendSign = Math.sign(bend || 1);
++    if (pole && rawDistance > 0.0001) {
++      const a = delta;
++      const b = Vec2.sub(pole, root);
++      const cross = a.x * b.y - a.y * b.x;
++      const poleSide = Math.sign(cross);
++      if (poleSide !== 0) bendSign = poleSide;
++    }
++
++    const jointAngle = Math.acos(cosAngle) * bendSign;
++    const mid = Vec2.add(root, Vec2.fromAngle(baseAngle + jointAngle, upperLength));
++    return { root: root.clone(), mid, end };
++  }
++
++  const DEFAULT_LENGTHS = Object.freeze({
++    spine: 72,
++    neck: 12,
++    head: 22,
++    shoulderWidth: 50,
++    hipWidth: 34,
++    upperArm: 52,
++    forearm: 48,
++    upperLeg: 62,
++    lowerLeg: 56,
++  });
++
++  const DEFAULT_POSES = Object.freeze({
++    idle: { torsoLeanDeg: 0, headTiltDeg: 0, armLift: 0, hipDrop: 0 },
++    walkContact: { torsoLeanDeg: 3, headTiltDeg: -2, armLift: 2, hipDrop: 2 },
++    runContact: { torsoLeanDeg: 8, headTiltDeg: -3, armLift: 6, hipDrop: 5 },
++    crouch: { torsoLeanDeg: 8, headTiltDeg: 3, armLift: 8, hipDrop: 12 },
++    jumpAir: { torsoLeanDeg: 1, headTiltDeg: 0, armLift: 10, hipDrop: -8 },
++    wave: { torsoLeanDeg: 2, headTiltDeg: 0, armLift: 14, hipDrop: 0 },
++  });
++
++  const DEFAULT_ACTIONS = Object.freeze({
++    idle: { duration: 0, loop: true, layer: 'base', blendIn: 0.2, blendOut: 0.2 },
++    walk: { duration: 0, loop: true, layer: 'base', blendIn: 0.16, blendOut: 0.16 },
++    run: { duration: 0, loop: true, layer: 'base', blendIn: 0.14, blendOut: 0.14 },
++    crouch: { duration: 0, loop: true, layer: 'base', blendIn: 0.18, blendOut: 0.18 },
++    jump: { duration: 0.86, loop: false, layer: 'base', blendIn: 0.05, blendOut: 0.15 },
++    wave: { duration: 1.0, loop: false, layer: 'upper', blendIn: 0.08, blendOut: 0.12 },
++  });
++
++  class PoseLibrary {
++    constructor(initial = DEFAULT_POSES) { this.map = JSON.parse(JSON.stringify(initial)); }
++    list() { return Object.keys(this.map); }
++    get(name) { return this.map[name] ? JSON.parse(JSON.stringify(this.map[name])) : null; }
++    set(name, def) { if (typeof name === 'string') this.map[name] = JSON.parse(JSON.stringify(def ?? {})); return this; }
++    remove(name) { delete this.map[name]; return this; }
++    exportJSON(pretty = true) { return JSON.stringify(this.map, null, pretty ? 2 : 0); }
++    importJSON(text) {
++      const parsed = JSON.parse(text);
++      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Formato de pose inválido');
++      this.map = parsed;
++      return this;
++    }
++  }
++
++  class ActionTrack {
++    constructor() { this.active = []; }
++    play(name, cfg) {
++      const now = performance.now() * 0.001;
++      if (cfg.layer === 'base') this.active = this.active.filter(a => a.layer !== 'base');
++      this.active.push({ name, layer: cfg.layer, cfg, time: 0, start: now, weight: 0, exiting: false });
++    }
++    stopLayer(layer) {
++      for (const item of this.active) if (item.layer === layer) item.exiting = true;
++    }
++    update(dt) {
++      for (const item of this.active) {
++        item.time += dt;
++        const inDur = Math.max(0.0001, item.cfg.blendIn || 0.1);
++        const outDur = Math.max(0.0001, item.cfg.blendOut || 0.1);
++        if (!item.exiting) item.weight = clamp(item.weight + dt / inDur, 0, 1);
++        else item.weight = clamp(item.weight - dt / outDur, 0, 1);
++        if (!item.cfg.loop && item.time >= item.cfg.duration) item.exiting = true;
++      }
++      this.active = this.active.filter(a => a.weight > 0.001 || (!a.exiting && a.cfg.loop));
++    }
++    weightOf(name) { return this.active.filter(a => a.name === name).reduce((s, a) => s + a.weight, 0); }
++    topBase() { return this.active.filter(a => a.layer === 'base').sort((a, b) => b.weight - a.weight)[0] ?? null; }
++    topUpper() { return this.active.filter(a => a.layer === 'upper').sort((a, b) => b.weight - a.weight)[0] ?? null; }
++  }
++
++  class StickCharacter {
++    constructor(options = {}) {
++      this.id = options.id ?? `char-${Math.random().toString(36).slice(2, 8)}`;
++      this.position = new Vec2(options.x ?? 0, options.y ?? 0);
++      this.velocity = new Vec2();
++      this.target = new Vec2(options.x ?? 0, (options.y ?? 0) - 110);
++      this.lookTarget = this.target.clone();
++      this.smoothedTarget = this.target.clone();
++      this.facing = 1;
++      this.scale = options.scale ?? 1;
++      this.energy = options.energy ?? 0.72;
++      this.smoothing = options.smoothing ?? 0.18;
++      this.groundY = options.groundY ?? 420;
++      this.motion = 0;
++      this.jumpTime = 1;
++      this.jumpDuration = 0.86;
++      this.time = 0;
++      this.debug = false;
++      this.reachRight = true;
++      this.reachLeft = false;
++      this.footLock = true;
++      this.lengths = { ...DEFAULT_LENGTHS, ...(options.lengths ?? {}) };
++      this.poseBias = { ...DEFAULT_POSES.idle };
++      this.joints = {};
++      this.bones = [];
++      this.track = new ActionTrack();
++      this.track.play('idle', DEFAULT_ACTIONS.idle);
++      this.overlayWaveSide = 'right';
++    }
++
++    setBaseAction(name, actions) {
++      if (!actions[name]) return;
++      this.track.play(name, actions[name]);
++    }
++
++    overlayAction(name, actions) {
++      if (!actions[name]) return;
++      this.track.play(name, actions[name]);
++    }
++
++    jump(actions) {
++      this.jumpTime = 0;
++      if (actions.jump) this.setBaseAction('jump', actions);
++    }
++
++    scaled() {
++      const out = {};
++      for (const [k, v] of Object.entries(this.lengths)) out[k] = v * this.scale;
++      return out;
++    }
++
++    poseForState(poses) {
++      const base = this.track.topBase()?.name ?? 'idle';
++      const upper = this.track.topUpper()?.name ?? null;
++      let poseName = 'idle';
++      if (this.jumpTime < 1) poseName = 'jumpAir';
++      else if (base === 'run') poseName = 'runContact';
++      else if (base === 'walk') poseName = 'walkContact';
++      else if (base === 'crouch') poseName = 'crouch';
++      const p = { ...(poses.get('idle') ?? {}) , ...(poses.get(poseName) ?? {}) };
++      if (upper === 'wave') Object.assign(p, poses.get('wave') ?? {});
++      return p;
++    }
++
++    update(dt, actions, poses, worldBounds) {
++      this.time += dt;
++      this.track.update(dt);
++      this.poseBias = this.poseForState(poses);
++
++      const base = this.track.topBase()?.name ?? 'idle';
++      const movingAction = base === 'walk' || base === 'run';
++      const speed = base === 'run' ? 240 : 132;
++      const targetSpeed = movingAction ? this.facing * speed : 0;
++      this.velocity.x = damp(this.velocity.x, targetSpeed, 0.12, dt);
++
++      this.position.x += this.velocity.x * dt;
++      if (worldBounds) this.position.x = clamp(this.position.x, worldBounds.left, worldBounds.right);
++
++      this.smoothedTarget.x = damp(this.smoothedTarget.x, this.target.x, this.smoothing, dt);
++      this.smoothedTarget.y = damp(this.smoothedTarget.y, this.target.y, this.smoothing, dt);
++      this.lookTarget.x = damp(this.lookTarget.x, this.target.x, this.smoothing * 0.8, dt);
++      this.lookTarget.y = damp(this.lookTarget.y, this.target.y, this.smoothing * 0.8, dt);
++
++      if (this.jumpTime < 1) this.jumpTime = Math.min(1, this.jumpTime + dt / this.jumpDuration);
++      this.motion = damp(this.motion, movingAction ? 1 : 0, 0.15, dt);
++
++      this.solvePose();
++    }
++
++    solvePose() {
++      const L = this.scaled();
++      const moving = this.motion > 0.025;
++      const runMix = this.track.weightOf('run');
++      const gaitSpeed = lerp(1.08, 1.72, clamp(runMix, 0, 1));
++      const phase = this.time * gaitSpeed * TAU;
++      const s = Math.sin(phase);
++      const c = Math.cos(phase);
++
++      const jumpAir = this.jumpTime < 1 ? Math.sin(this.jumpTime * Math.PI) : 0;
++      const jumpY = this.jumpTime < 1 ? -104 * Math.sin(this.jumpTime * Math.PI) : 0;
++      const crouchMix = this.track.weightOf('crouch');
++      const crouchDrop = crouchMix * 38 * this.scale + (this.poseBias.hipDrop || 0) * this.scale;
++
++      const legTotal = L.upperLeg + L.lowerLeg;
++      const hipStandingY = this.groundY - legTotal * 0.88;
++      const bob = moving ? Math.max(0, Math.cos(phase * 2)) * 4.8 * this.energy : Math.sin(this.time * 1.6) * 1.2 * this.scale;
++      const hip = new Vec2(this.position.x + s * 4 * this.energy * 0.18 * this.facing, hipStandingY + jumpY + crouchDrop - bob);
++
++      const poseLean = (this.poseBias.torsoLeanDeg || 0) * DEG * this.facing;
++      const runLean = this.facing * lerp(4.2, 7.5, clamp(runMix, 0, 1)) * DEG * this.motion;
++      const torsoAngle = -Math.PI / 2 + poseLean + runLean - s * 2.2 * DEG * this.energy;
++
++      const chest = Vec2.add(hip, Vec2.fromAngle(torsoAngle, L.spine));
++      const neck = Vec2.add(chest, Vec2.fromAngle(torsoAngle, L.neck));
++      const look = Vec2.sub(this.lookTarget, neck);
++      let headAngle = look.lenSq() > 2 ? look.angle() : torsoAngle;
++      const headOffset = clamp(normalizeAngle(headAngle - torsoAngle), -54 * DEG, 54 * DEG);
++      headAngle = torsoAngle + headOffset + (this.poseBias.headTiltDeg || 0) * DEG * this.facing;
++      const head = Vec2.add(neck, Vec2.fromAngle(headAngle, L.head * 0.72));
++
++      const side = Vec2.fromAngle(torsoAngle + Math.PI / 2, 1);
++      const shoulderL = Vec2.add(chest, Vec2.mul(side, -L.shoulderWidth / 2));
++      const shoulderR = Vec2.add(chest, Vec2.mul(side, L.shoulderWidth / 2));
++      const hipL = Vec2.add(hip, Vec2.mul(side, -L.hipWidth / 2));
++      const hipR = Vec2.add(hip, Vec2.mul(side, L.hipWidth / 2));
++
++      const armReach = L.upperArm + L.forearm - 12 * this.scale;
++      const armLift = (this.poseBias.armLift || 0) * this.scale;
++      const armSwing = lerp(24, 34, clamp(runMix, 0, 1)) * this.energy * this.motion * this.scale;
++      const armDrop = armReach * (0.86 - crouchMix * 0.08) - armLift;
++
++      const waveWeight = this.track.weightOf('wave');
++      const wavePulse = Math.sin(this.time * 18) * 12 * this.scale;
++      const rightDefault = Vec2.add(shoulderR, new Vec2(-this.facing * s * armSwing + 7 * this.scale * this.facing, armDrop + Math.abs(c) * 4 * this.scale * this.motion));
++      const leftDefault = Vec2.add(shoulderL, new Vec2(this.facing * s * armSwing - 7 * this.scale * this.facing, armDrop + Math.abs(Math.sin(phase + Math.PI)) * 2.2 * this.scale * this.motion));
++      const waveRight = Vec2.add(shoulderR, new Vec2((44 + wavePulse * 0.2) * this.scale * this.facing, (-76 - Math.abs(wavePulse)) * this.scale));
++
++      const mirror = new Vec2(this.position.x - (this.smoothedTarget.x - this.position.x), this.smoothedTarget.y);
++      const handRTarget = this.reachRight ? this.limitTarget(shoulderR, this.smoothedTarget, L.upperArm + L.forearm - 2) : rightDefault;
++      const handLTarget = this.reachLeft ? this.limitTarget(shoulderL, mirror, L.upperArm + L.forearm - 2) : leftDefault;
++      const finalRight = Vec2.lerp(handRTarget, waveRight, clamp(waveWeight, 0, 1));
++
++      const armRPole = Vec2.add(shoulderR, new Vec2(-this.facing * 24 * this.scale + side.x * L.shoulderWidth, 42 * this.scale + side.y * L.shoulderWidth));
++      const armLPole = Vec2.add(shoulderL, new Vec2(-this.facing * 24 * this.scale - side.x * L.shoulderWidth, 42 * this.scale - side.y * L.shoulderWidth));
++      const armR = solveTwoBone(shoulderR, finalRight, L.upperArm, L.forearm, -this.facing, armRPole);
++      const armL = solveTwoBone(shoulderL, handLTarget, L.upperArm, L.forearm, this.facing, armLPole);
++
++      const stride = lerp(32, 48, clamp(runMix, 0, 1)) * this.energy * this.motion * this.scale;
++      const lift = lerp(19, 31, clamp(runMix, 0, 1)) * this.energy * this.motion * this.scale;
++      const stanceWidth = L.hipWidth * 0.36;
++      const footCycle = (hipJoint, sideSign, localPhase) => {
++        const swing = Math.max(0, Math.sin(localPhase));
++        const strideProgress = -Math.cos(localPhase);
++        const groundTarget = new Vec2(hip.x + sideSign * stanceWidth + this.facing * strideProgress * stride, this.groundY - swing * lift);
++        const relaxedAir = Vec2.add(hipJoint, new Vec2(sideSign * 10 * this.scale, legTotal * 0.73));
++        return Vec2.lerp(groundTarget, relaxedAir, jumpAir);
++      };
++
++      let footRTarget = footCycle(hipR, 1, phase);
++      let footLTarget = footCycle(hipL, -1, phase + Math.PI);
++      if (!this.footLock) {
++        footRTarget = Vec2.add(hipR, new Vec2(14 * this.scale, legTotal * 0.76));
++        footLTarget = Vec2.add(hipL, new Vec2(-14 * this.scale, legTotal * 0.76));
++      }
++
++      const kneePoleR = Vec2.add(hipR, new Vec2(this.facing * 68 * this.scale, 36 * this.scale));
++      const kneePoleL = Vec2.add(hipL, new Vec2(this.facing * 68 * this.scale, 36 * this.scale));
++      const legR = solveTwoBone(hipR, footRTarget, L.upperLeg, L.lowerLeg, this.facing, kneePoleR);
++      const legL = solveTwoBone(hipL, footLTarget, L.upperLeg, L.lowerLeg, this.facing, kneePoleL);
++
++      this.joints = {
++        hip, chest, neck, head, shoulderL, shoulderR,
++        elbowL: armL.mid, handL: armL.end,
++        elbowR: armR.mid, handR: armR.end,
++        hipL, hipR, kneeL: legL.mid, kneeR: legR.mid, footL: legL.end, footR: legR.end,
++      };
++      this.bones = [
++        ['hipL', 'kneeL'], ['kneeL', 'footL'],
++        ['hipR', 'kneeR'], ['kneeR', 'footR'],
++        ['hip', 'chest'], ['chest', 'neck'],
++        ['shoulderL', 'elbowL'], ['elbowL', 'handL'],
++        ['shoulderR', 'elbowR'], ['elbowR', 'handR'],
++      ];
++    }
++
++    limitTarget(root, target, maxDistance) {
++      const d = Vec2.sub(target, root);
++      const distance = d.len();
++      if (distance <= maxDistance) return target.clone();
++      return Vec2.add(root, d.normalize().mul(maxDistance));
++    }
++  }
++
++  class CanvasRenderer {
++    constructor(canvas) {
++      if (!canvas) throw new Error('Canvas não encontrado');
++      this.canvas = canvas;
++      this.ctx = canvas.getContext('2d');
++      if (!this.ctx) throw new Error('Canvas 2D indisponível');
++      this.width = canvas.width;
++      this.height = canvas.height;
++      this.dpr = 1;
++      this.theme = {
++        bgA: '#071122', bgB: '#030712',
++        bone: '#f7fbff', core: '#ffffff', shadow: 'rgba(1,8,24,.82)',
++        joint: '#7ddcff', floor: 'rgba(150,205,255,.35)', grid: 'rgba(150,205,255,.07)',
++      };
++      this.resize();
++      window.addEventListener('resize', () => this.resize(), { passive: true });
++    }
++    resize() {
++      const rect = this.canvas.getBoundingClientRect();
++      const cssW = Math.max(1, rect.width || this.canvas.clientWidth || 960);
++      const cssH = Math.max(1, rect.height || this.canvas.clientHeight || 560);
++      this.dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
++      const nextW = Math.floor(cssW * this.dpr);
++      const nextH = Math.floor(cssH * this.dpr);
++      if (this.canvas.width !== nextW) this.canvas.width = nextW;
++      if (this.canvas.height !== nextH) this.canvas.height = nextH;
++      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
++      this.width = cssW; this.height = cssH;
++    }
++    clear() {
++      const ctx = this.ctx;
++      ctx.clearRect(0, 0, this.width, this.height);
++      const g = ctx.createLinearGradient(0, 0, 0, this.height);
++      g.addColorStop(0, this.theme.bgA); g.addColorStop(1, this.theme.bgB);
++      ctx.fillStyle = g; ctx.fillRect(0, 0, this.width, this.height);
++    }
++    drawWorld(groundY) {
++      const ctx = this.ctx;
++      ctx.save(); ctx.strokeStyle = this.theme.grid; ctx.lineWidth = 1;
++      for (let x = 0; x <= this.width; x += 42) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, this.height); ctx.stroke(); }
++      for (let y = 0; y <= this.height; y += 42) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(this.width, y); ctx.stroke(); }
++      ctx.strokeStyle = this.theme.floor; ctx.lineWidth = 2; ctx.setLineDash([14, 10]);
++      ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(this.width, groundY); ctx.stroke(); ctx.setLineDash([]);
++      ctx.restore();
++    }
++    drawCharacter(character) {
++      const joints = character.joints;
++      if (!joints.hip) return;
++      const ctx = this.ctx;
++      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
++      ctx.strokeStyle = this.theme.shadow; ctx.lineWidth = 13.5 * character.scale;
++      for (const [a, b] of character.bones) this.line(joints[a], joints[b]);
++      ctx.strokeStyle = this.theme.bone; ctx.lineWidth = 7.2 * character.scale;
++      for (const [a, b] of character.bones) this.line(joints[a], joints[b]);
++      ctx.strokeStyle = this.theme.core; ctx.globalAlpha = .82; ctx.lineWidth = 2.4 * character.scale;
++      for (const [a, b] of character.bones) this.line(joints[a], joints[b]); ctx.globalAlpha = 1;
++
++      ctx.fillStyle = '#071122';
++      ctx.strokeStyle = this.theme.bone;
++      ctx.lineWidth = 5 * character.scale;
++      ctx.beginPath(); ctx.arc(joints.head.x, joints.head.y, 21 * character.scale, 0, TAU); ctx.fill(); ctx.stroke();
++
++      if (character.debug) {
++        ctx.fillStyle = this.theme.joint;
++        ctx.strokeStyle = 'rgba(120,215,255,.45)';
++        ctx.lineWidth = 1;
++        for (const [name, p] of Object.entries(joints)) {
++          ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, TAU); ctx.fill();
++          ctx.strokeText(name, p.x + 7, p.y - 4);
++        }
++      }
++      ctx.restore();
++    }
++    line(a, b) { const ctx = this.ctx; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
++  }
++
++  class StickEngine {
++    constructor(canvas, options = {}) {
++      this.renderer = new CanvasRenderer(canvas);
++      this.poses = new PoseLibrary(options.poses ?? DEFAULT_POSES);
++      this.actions = { ...DEFAULT_ACTIONS, ...(options.actions ?? {}) };
++      this.characters = [];
++      this.activeCharacterId = null;
++      this.boundsPadding = options.boundsPadding ?? 80;
++      this._raf = 0;
++      this._last = 0;
++      this._fps = 0;
++      this._fpsTime = 0;
++      this._fpsFrames = 0;
++      this.onBeforeFrame = null;
++      this.onAfterFrame = null;
++      this.addCharacter({ id: 'hero', x: this.renderer.width * 0.5, y: this.renderer.height * 0.78, groundY: this.renderer.height * 0.78 });
++    }
++
++    addCharacter(options = {}) {
++      const c = new StickCharacter({ groundY: this.renderer.height * 0.78, ...options });
++      this.characters.push(c);
++      if (!this.activeCharacterId) this.activeCharacterId = c.id;
++      return c;
++    }
++    removeCharacter(id) { this.characters = this.characters.filter(c => c.id !== id); if (this.activeCharacterId === id) this.activeCharacterId = this.characters[0]?.id ?? null; }
++    getCharacter(id = this.activeCharacterId) { return this.characters.find(c => c.id === id) ?? null; }
++    selectCharacter(id) { if (this.getCharacter(id)) this.activeCharacterId = id; return this; }
++
++    play(name, id) { const c = this.getCharacter(id); if (!c || !this.actions[name]) return this; c.setBaseAction(name, this.actions); return this; }
++    overlay(name, id) { const c = this.getCharacter(id); if (!c || !this.actions[name]) return this; c.overlayAction(name, this.actions); return this; }
++    jump(id) { const c = this.getCharacter(id); if (c) c.jump(this.actions); return this; }
++    crouch(enabled = true, id) { return this.play(enabled ? 'crouch' : 'idle', id); }
++    stop(id) { return this.play('idle', id); }
++    lookAt(x, y, id) { const c = this.getCharacter(id); if (c) c.target.set(x, y); return this; }
++    reach(hand, x, y, id) {
++      const c = this.getCharacter(id); if (!c) return this;
++      c.target.set(x, y);
++      c.reachRight = hand === 'rightHand' || hand === 'both';
++      c.reachLeft = hand === 'leftHand' || hand === 'both';
++      return this;
++    }
++    setFacing(dir, id) { const c = this.getCharacter(id); if (!c) return this; if (dir === 'left' || dir === -1) c.facing = -1; if (dir === 'right' || dir === 1) c.facing = 1; return this; }
++    setEnergy(v, id) { const c = this.getCharacter(id); if (c) c.energy = clamp(finite(v, c.energy), 0, 1); return this; }
++    setScale(v, id) { const c = this.getCharacter(id); if (c) c.scale = clamp(finite(v, c.scale), 0.5, 2); return this; }
++    setSmoothing(v, id) { const c = this.getCharacter(id); if (c) c.smoothing = clamp(finite(v, c.smoothing), 0.01, 0.8); return this; }
++    setFootLock(v, id) { const c = this.getCharacter(id); if (c) c.footLock = Boolean(v); return this; }
++    setReach(right = true, left = false, id) { const c = this.getCharacter(id); if (c) { c.reachRight = Boolean(right); c.reachLeft = Boolean(left); } return this; }
++    setDebug(v, id) { const c = this.getCharacter(id); if (c) c.debug = Boolean(v); return this; }
++
++    listPoses() { return this.poses.list(); }
++    getPose(name) { return this.poses.get(name); }
++    registerPose(name, def) { this.poses.set(name, def); return this; }
++    removePose(name) { this.poses.remove(name); return this; }
++    exportPosesJSON(pretty = true) { return this.poses.exportJSON(pretty); }
++    importPosesJSON(text) { this.poses.importJSON(text); return this; }
++
++    getState(id = this.activeCharacterId) {
++      const c = this.getCharacter(id);
++      return {
++        fps: this._fps,
++        characters: this.characters.length,
++        activeCharacterId: this.activeCharacterId,
++        character: c ? {
++          id: c.id,
++          actionBase: c.track.topBase()?.name ?? 'idle',
++          actionUpper: c.track.topUpper()?.name ?? null,
++          facing: c.facing === 1 ? 'right' : 'left',
++          energy: c.energy,
++          scale: c.scale,
++          smoothing: c.smoothing,
++          footLock: c.footLock,
++          reachRight: c.reachRight,
++          reachLeft: c.reachLeft,
++        } : null,
++      };
++    }
++
++    step(dt, now = performance.now()) {
++      this.renderer.resize();
++      for (const c of this.characters) c.groundY = this.renderer.height * 0.78;
++      if (typeof this.onBeforeFrame === 'function') this.onBeforeFrame({ dt, now, engine: this });
++      for (const c of this.characters) {
++        c.update(dt, this.actions, this.poses, { left: this.boundsPadding, right: this.renderer.width - this.boundsPadding });
++      }
++
++      this.renderer.clear();
++      this.renderer.drawWorld(this.renderer.height * 0.78);
++      for (const c of this.characters) this.renderer.drawCharacter(c);
++
++      this._fpsFrames += 1; this._fpsTime += dt;
++      if (this._fpsTime >= 0.35) { this._fps = Math.round(this._fpsFrames / this._fpsTime); this._fpsFrames = 0; this._fpsTime = 0; }
++      if (typeof this.onAfterFrame === 'function') this.onAfterFrame({ dt, now, engine: this });
++    }
++
++    start() {
++      if (this._raf) return this;
++      this._last = performance.now();
++      const frame = (now) => {
++        const dt = Math.min(0.033, (now - this._last) / 1000 || 0.016);
++        this._last = now;
++        this.step(dt, now);
++        this._raf = requestAnimationFrame(frame);
++      };
++      this._raf = requestAnimationFrame(frame);
++      return this;
++    }
++
++    pause() { if (this._raf) cancelAnimationFrame(this._raf); this._raf = 0; return this; }
++  }
++
++  function create(canvas, options = {}) { return new StickEngine(canvas, options); }
++
++  const api = Object.freeze({
++    VERSION: '1.0.0-experimental',
++    Vec2,
++    StickEngine,
++    StickCharacter,
++    CanvasRenderer,
++    DEFAULT_ACTIONS,
++    DEFAULT_POSES,
++    create,
++  });
++
++  if (typeof module !== 'undefined' && module.exports) module.exports = api;
++  if (typeof window !== 'undefined') window.StickEngine = api;
++})();
+diff --git a/examples/multi-character.html b/examples/multi-character.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..6bd06959f28301e6f4c2c71f53761dd001e8f35e
+--- /dev/null
++++ b/examples/multi-character.html
+@@ -0,0 +1,37 @@
++<!doctype html>
++<html lang="pt-BR">
++<head>
++  <meta charset="utf-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1" />
++  <title>Exemplo - Múltiplos Bonecos</title>
++  <style>
++    body { margin: 0; background: #060c18; color: #fff; font-family: Inter, system-ui, sans-serif; }
++    canvas { width: 100vw; height: 100vh; display: block; }
++  </style>
++</head>
++<body>
++  <canvas id="stage" width="1200" height="700"></canvas>
++  <script src="../engine/stick-engine.js"></script>
++  <script>
++    const engine = StickEngine.create(document.querySelector('#stage'));
++    const a = engine.getCharacter('hero');
++    const b = engine.addCharacter({ id: 'npc-1', x: 350, y: 540, scale: 0.95 });
++    const c = engine.addCharacter({ id: 'npc-2', x: 760, y: 540, scale: 1.05 });
++
++    engine.play('walk', a.id);
++    engine.play('run', b.id);
++    engine.play('crouch', c.id);
++    engine.overlay('wave', c.id);
++
++    engine.onBeforeFrame = ({ now }) => {
++      engine.lookAt(600 + Math.sin(now * 0.001) * 260, 250 + Math.cos(now * 0.0012) * 90, a.id);
++      b.facing = -1;
++      c.facing = 1;
++    };
++
++    engine.setDebug(true, a.id);
++    engine.start();
++    window.engine = engine;
++  </script>
++</body>
++</html>
+diff --git a/index.html b/index.html
+index b3136b568eb6c4693f1ed5572f4a0cf7909b27d1..3d561c9ad847e7ccccb072680633566244495321 100644
+--- a/index.html
++++ b/index.html
+@@ -1,95 +1,18 @@
+ <!doctype html>
+ <html lang="pt-BR">
+ <head>
+   <meta charset="utf-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1" />
+-  <title>Stick Engine Prototype</title>
+-  <link rel="stylesheet" href="css/style.css" />
++  <title>Stick Engine</title>
++  <style>
++    body { font-family: Inter, system-ui, sans-serif; margin: 2rem; background: #070c18; color: #f3f7ff; }
++    a { color: #7ddcff; }
++  </style>
+ </head>
+ <body>
+-  <main class="app-shell">
+-    <section class="hero-panel">
+-      <div class="title-block">
+-        <p class="eyebrow">Prototype / Browser Canvas</p>
+-        <h1>Stick Engine</h1>
+-        <p class="subtitle">Boneco palito articulado, controlável por comandos simples, com caminhada procedural, mira por mouse, IK para alcançar alvos e renderização direta no browser.</p>
+-      </div>
+-
+-      <div class="status-grid" id="statusGrid" aria-live="polite">
+-        <div><span>Modo</span><strong id="statusMode">Inicializando</strong></div>
+-        <div><span>FPS</span><strong id="statusFps">--</strong></div>
+-        <div><span>API</span><strong>Vanilla JS</strong></div>
+-      </div>
+-    </section>
+-
+-    <section class="workspace">
+-      <aside class="controls" aria-label="Controles do protótipo">
+-        <div class="control-card">
+-          <h2>Ações</h2>
+-          <div class="button-grid">
+-            <button data-action="idle" class="is-active">Parado</button>
+-            <button data-action="walk">Andar</button>
+-            <button data-action="run">Correr</button>
+-            <button data-action="jump">Pular</button>
+-            <button data-action="crouch">Agachar</button>
+-            <button data-action="waveRight">Acenar</button>
+-          </div>
+-        </div>
+-
+-        <div class="control-card">
+-          <h2>Controle fino</h2>
+-          <label class="toggle-row">
+-            <input id="reachToggle" type="checkbox" checked />
+-            <span>Mão direita alcança o mouse</span>
+-          </label>
+-          <label class="toggle-row">
+-            <input id="leftReachToggle" type="checkbox" />
+-            <span>Mão esquerda espelha o alvo</span>
+-          </label>
+-          <label class="toggle-row">
+-            <input id="footLockToggle" type="checkbox" checked />
+-            <span>Pés com IK no chão</span>
+-          </label>
+-          <label class="toggle-row">
+-            <input id="debugToggle" type="checkbox" />
+-            <span>Mostrar juntas e alvos</span>
+-          </label>
+-        </div>
+-
+-        <div class="control-card">
+-          <h2>Parâmetros</h2>
+-          <label>
+-            Energia do movimento
+-            <input id="energySlider" type="range" min="0" max="1" value="0.72" step="0.01" />
+-          </label>
+-          <label>
+-            Escala do personagem
+-            <input id="scaleSlider" type="range" min="0.72" max="1.34" value="1" step="0.01" />
+-          </label>
+-          <label>
+-            Suavização do alvo
+-            <input id="smoothSlider" type="range" min="0.03" max="0.45" value="0.18" step="0.01" />
+-          </label>
+-        </div>
+-
+-        <div class="control-card help-card">
+-          <h2>Teclado</h2>
+-          <p><kbd>A</kbd>/<kbd>D</kbd> move, <kbd>Shift</kbd> corre, <kbd>W</kbd> pula, <kbd>S</kbd> agacha, <kbd>Espaço</kbd> acena.</p>
+-          <p>O mouse controla o olhar. Com a opção ativa, a mão direita tenta alcançar o cursor.</p>
+-        </div>
+-      </aside>
+-
+-      <section class="stage-wrap">
+-        <canvas id="stage" width="960" height="560" aria-label="Área de demonstração da Stick Engine"></canvas>
+-        <div id="bootError" class="boot-error" hidden></div>
+-        <div class="stage-caption">
+-          <span>Arraste o mouse pela área. Clique nos botões ou use o teclado.</span>
+-          <button id="resetBtn" type="button">Recentralizar</button>
+-        </div>
+-      </section>
+-    </section>
+-  </main>
+-
+-  <script defer src="js/stick-engine.js"></script>
++  <h1>Stick Engine</h1>
++  <p>Demo principal:</p>
++  <p><a href="./demo/index.html">Abrir demo/laboratório</a></p>
++  <p>Documentação da API: <a href="./docs/API.md">docs/API.md</a></p>
+ </body>
+ </html>
+diff --git a/js/stick-engine.js b/js/stick-engine.js
+deleted file mode 100644
+index c4277e80388e633081813a6ab656c062968b55d9..0000000000000000000000000000000000000000
+--- a/js/stick-engine.js
++++ /dev/null
+@@ -1,996 +0,0 @@
+-(() => {
+-  'use strict';
+-
+-  const TAU = Math.PI * 2;
+-  const DEG = Math.PI / 180;
+-
+-  function clamp(value, min, max) {
+-    return Math.max(min, Math.min(max, value));
+-  }
+-
+-  function lerp(a, b, t) {
+-    return a + (b - a) * t;
+-  }
+-
+-  function invLerp(a, b, v) {
+-    if (a === b) return 0;
+-    return clamp((v - a) / (b - a), 0, 1);
+-  }
+-
+-  function smoothstep(edge0, edge1, x) {
+-    const t = invLerp(edge0, edge1, x);
+-    return t * t * (3 - 2 * t);
+-  }
+-
+-  function damp(current, target, smoothing, dt) {
+-    const t = 1 - Math.pow(1 - clamp(smoothing, 0, 1), dt * 60);
+-    return lerp(current, target, t);
+-  }
+-
+-  function normalizeAngle(angle) {
+-    let a = angle;
+-    while (a <= -Math.PI) a += TAU;
+-    while (a > Math.PI) a -= TAU;
+-    return a;
+-  }
+-
+-  function perpendicular(angle) {
+-    return new Vec2(Math.cos(angle + Math.PI / 2), Math.sin(angle + Math.PI / 2));
+-  }
+-
+-  function cross2(a, b) {
+-    return a.x * b.y - a.y * b.x;
+-  }
+-
+-  class Vec2 {
+-    constructor(x = 0, y = 0) {
+-      this.x = x;
+-      this.y = y;
+-    }
+-
+-    set(x, y) {
+-      this.x = Number.isFinite(x) ? x : 0;
+-      this.y = Number.isFinite(y) ? y : 0;
+-      return this;
+-    }
+-
+-    copy(v) {
+-      this.x = v.x;
+-      this.y = v.y;
+-      return this;
+-    }
+-
+-    clone() {
+-      return new Vec2(this.x, this.y);
+-    }
+-
+-    add(v) {
+-      this.x += v.x;
+-      this.y += v.y;
+-      return this;
+-    }
+-
+-    sub(v) {
+-      this.x -= v.x;
+-      this.y -= v.y;
+-      return this;
+-    }
+-
+-    mul(s) {
+-      this.x *= s;
+-      this.y *= s;
+-      return this;
+-    }
+-
+-    length() {
+-      return Math.hypot(this.x, this.y);
+-    }
+-
+-    lengthSq() {
+-      return this.x * this.x + this.y * this.y;
+-    }
+-
+-    normalize() {
+-      const len = this.length();
+-      if (len > 1e-8) {
+-        this.x /= len;
+-        this.y /= len;
+-      }
+-      return this;
+-    }
+-
+-    angle() {
+-      return Math.atan2(this.y, this.x);
+-    }
+-
+-    static fromAngle(rad, len = 1) {
+-      return new Vec2(Math.cos(rad) * len, Math.sin(rad) * len);
+-    }
+-
+-    static add(a, b) {
+-      return new Vec2(a.x + b.x, a.y + b.y);
+-    }
+-
+-    static sub(a, b) {
+-      return new Vec2(a.x - b.x, a.y - b.y);
+-    }
+-
+-    static mul(v, s) {
+-      return new Vec2(v.x * s, v.y * s);
+-    }
+-
+-    static distance(a, b) {
+-      return Math.hypot(a.x - b.x, a.y - b.y);
+-    }
+-
+-    static lerp(a, b, t) {
+-      return new Vec2(lerp(a.x, b.x, t), lerp(a.y, b.y, t));
+-    }
+-  }
+-
+-  function easeInOut(t) {
+-    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+-  }
+-
+-  class ActionTimeline {
+-    constructor() {
+-      this.name = 'idle';
+-      this.time = 0;
+-      this.once = null;
+-    }
+-
+-    set(name) {
+-      if (this.name !== name) {
+-        this.name = name;
+-        this.time = 0;
+-      }
+-    }
+-
+-    trigger(name, duration = 0.8) {
+-      this.once = { name, time: 0, duration };
+-    }
+-
+-    update(dt) {
+-      this.time += dt;
+-      if (this.once) {
+-        this.once.time += dt;
+-        if (this.once.time >= this.once.duration) this.once = null;
+-      }
+-    }
+-
+-    get activeGesture() {
+-      return this.once;
+-    }
+-  }
+-
+-  function gaitCycle(t, speed = 1, energy = 0.7) {
+-    const phase = t * speed * TAU;
+-    const sin = Math.sin(phase);
+-    const cos = Math.cos(phase);
+-    const double = Math.sin(phase * 2);
+-    return {
+-      phase,
+-      sin,
+-      cos,
+-      double,
+-      legRPhase: phase,
+-      legLPhase: phase + Math.PI,
+-      armR: -sin,
+-      armL: sin,
+-      hipSway: sin * 4.2 * energy,
+-      torsoCounter: -sin * 2.2 * energy,
+-      vertical: Math.max(0, Math.cos(phase * 2)) * 4.8 * energy,
+-    };
+-  }
+-
+-  function jumpCurve(t) {
+-    const p = clamp(t, 0, 1);
+-    let y = 0;
+-    let squash = 0;
+-    let air = 0;
+-
+-    if (p < 0.16) {
+-      const q = smoothstep(0, 0.16, p);
+-      y = 18 * q;
+-      squash = q;
+-    } else if (p < 0.78) {
+-      const q = invLerp(0.16, 0.78, p);
+-      y = -104 * Math.sin(q * Math.PI);
+-      air = Math.sin(q * Math.PI);
+-      squash = Math.max(0, 1 - q * 6) * 0.35;
+-    } else {
+-      const q = smoothstep(0.78, 1, p);
+-      y = 12 * (1 - q);
+-      squash = 1 - q;
+-    }
+-
+-    return { y, squash, air };
+-  }
+-
+-  function waveAmount(gesture) {
+-    if (!gesture || !gesture.name.startsWith('wave')) return 0;
+-    const p = clamp(gesture.time / gesture.duration, 0, 1);
+-    const envelope = Math.sin(p * Math.PI);
+-    const shake = Math.sin(p * Math.PI * 9);
+-    return envelope * (0.8 + shake * 0.2);
+-  }
+-
+-  function solveTwoBone(root, target, upperLength, lowerLength, bend = 1, pole = null) {
+-    const delta = Vec2.sub(target, root);
+-    const rawDistance = delta.length();
+-    const maxReach = upperLength + lowerLength - 0.0001;
+-    const minReach = Math.abs(upperLength - lowerLength) + 0.0001;
+-    const safeDistance = clamp(rawDistance || 0.0001, minReach, maxReach);
+-    const baseAngle = rawDistance > 0.0001 ? Math.atan2(delta.y, delta.x) : Math.PI / 2;
+-
+-    const endDistance = Math.min(rawDistance || maxReach, maxReach);
+-    const end = Vec2.add(root, Vec2.fromAngle(baseAngle, endDistance));
+-
+-    const cosAngle = clamp(
+-      (upperLength * upperLength + safeDistance * safeDistance - lowerLength * lowerLength) / (2 * upperLength * safeDistance),
+-      -1,
+-      1
+-    );
+-
+-    let bendSign = Math.sign(bend || 1);
+-    if (pole && rawDistance > 0.0001) {
+-      const poleDelta = Vec2.sub(pole, root);
+-      const poleSide = Math.sign(cross2(delta, poleDelta));
+-      if (poleSide !== 0) bendSign = poleSide;
+-    }
+-
+-    const jointAngle = Math.acos(cosAngle) * bendSign;
+-    const mid = Vec2.add(root, Vec2.fromAngle(baseAngle + jointAngle, upperLength));
+-
+-    return {
+-      root: root.clone(),
+-      mid,
+-      end,
+-      reachable: rawDistance <= upperLength + lowerLength,
+-    };
+-  }
+-
+-  const DEFAULT_LENGTHS = Object.freeze({
+-    spine: 72,
+-    neck: 12,
+-    head: 22,
+-    shoulderWidth: 50,
+-    hipWidth: 34,
+-    upperArm: 52,
+-    forearm: 48,
+-    upperLeg: 62,
+-    lowerLeg: 56,
+-  });
+-
+-  class StickFigure {
+-    constructor(options = {}) {
+-      this.position = new Vec2(options.x ?? 0, options.y ?? 0);
+-      this.velocity = new Vec2();
+-      this.target = new Vec2(options.x ?? 0, (options.y ?? 0) - 110);
+-      this.smoothedTarget = this.target.clone();
+-      this.lookTarget = this.target.clone();
+-      this.scale = options.scale ?? 1;
+-      this.energy = options.energy ?? 0.72;
+-      this.smoothing = options.smoothing ?? 0.18;
+-      this.facing = 1;
+-      this.action = 'idle';
+-      this.walkSpeed = 0;
+-      this.motion = 0;
+-      this.crouchEase = 0;
+-      this.time = 0;
+-      this.groundY = options.groundY ?? 420;
+-      this.jumpTime = 1;
+-      this.jumpDuration = 0.86;
+-      this.isCrouching = false;
+-      this.reachRight = true;
+-      this.reachLeft = false;
+-      this.footLock = true;
+-      this.debug = false;
+-      this.lengths = { ...DEFAULT_LENGTHS, ...(options.lengths ?? {}) };
+-      this.joints = new Map();
+-      this.bones = [];
+-      this.lastPose = null;
+-      this._gesture = null;
+-    }
+-
+-    setAction(action) {
+-      this.action = action;
+-      if (action === 'run') this.walkSpeed = 1.7;
+-      else if (action === 'walk') this.walkSpeed = 1;
+-      else this.walkSpeed = 0;
+-      this.isCrouching = action === 'crouch';
+-    }
+-
+-    jump() {
+-      if (this.jumpTime >= 1) this.jumpTime = 0;
+-    }
+-
+-    move(horizontal, run = false) {
+-      const targetSpeed = horizontal * (run ? 240 : 132);
+-      this.velocity.x = damp(this.velocity.x, targetSpeed, 0.22, 1 / 60);
+-      if (horizontal !== 0) {
+-        this.facing = Math.sign(horizontal);
+-        this.setAction(run ? 'run' : 'walk');
+-      } else if (this.action === 'walk' || this.action === 'run') {
+-        this.setAction('idle');
+-      }
+-    }
+-
+-    reset(x, groundY) {
+-      this.position.set(x, groundY);
+-      this.groundY = groundY;
+-      this.velocity.set(0, 0);
+-      this.jumpTime = 1;
+-      this.setAction('idle');
+-    }
+-
+-    update(dt, bounds) {
+-      this.time += dt;
+-      this.position.x += this.velocity.x * dt;
+-      if (bounds) this.position.x = clamp(this.position.x, bounds.left, bounds.right);
+-
+-      this.smoothedTarget.x = damp(this.smoothedTarget.x, this.target.x, this.smoothing, dt);
+-      this.smoothedTarget.y = damp(this.smoothedTarget.y, this.target.y, this.smoothing, dt);
+-      this.lookTarget.x = damp(this.lookTarget.x, this.target.x, this.smoothing * 0.75, dt);
+-      this.lookTarget.y = damp(this.lookTarget.y, this.target.y, this.smoothing * 0.75, dt);
+-
+-      const targetMotion = this.action === 'walk' || this.action === 'run' ? 1 : 0;
+-      const targetCrouch = this.action === 'crouch' ? 1 : 0;
+-      this.motion = damp(this.motion, targetMotion, 0.13, dt);
+-      this.crouchEase = damp(this.crouchEase, targetCrouch, 0.18, dt);
+-
+-      if (Math.abs(this.velocity.x) < 0.02) this.velocity.x = 0;
+-      if (this.jumpTime < 1) this.jumpTime = Math.min(1, this.jumpTime + dt / this.jumpDuration);
+-      this.lastPose = this.solvePose();
+-    }
+-
+-    solvePose() {
+-      const L = this.scaledLengths();
+-      const actionIsRun = this.action === 'run';
+-      const motion = clamp(this.motion, 0, 1);
+-      const moving = motion > 0.025;
+-      const gaitSpeed = actionIsRun ? 1.72 : 1.08;
+-      const gaitEnergy = this.energy * motion;
+-      const gait = gaitCycle(this.time, gaitSpeed, gaitEnergy);
+-      const jump = this.jumpTime < 1 ? jumpCurve(this.jumpTime) : { y: 0, squash: 0, air: 0 };
+-      const crouch = clamp(this.crouchEase, 0, 1);
+-      const legTotal = L.upperLeg + L.lowerLeg;
+-      const hipStandingY = this.groundY - legTotal * 0.88;
+-      const bodyBob = moving ? gait.vertical * (actionIsRun ? 1.14 : 0.82) : Math.sin(this.time * 1.6) * 1.2 * this.scale;
+-      const crouchDrop = crouch * 38 * this.scale;
+-      const anticipationDrop = jump.squash * 9 * this.scale;
+-      const root = new Vec2(
+-        this.position.x + gait.hipSway * 0.18 * this.facing,
+-        hipStandingY + jump.y + crouchDrop + anticipationDrop - bodyBob
+-      );
+-
+-      const breathe = (1 - motion) * Math.sin(this.time * 1.35) * 1.45 * DEG;
+-      const lean = (moving ? this.facing * (actionIsRun ? 7.5 : 4.2) * motion : 0) * DEG;
+-      const counterLean = gait.torsoCounter * DEG;
+-      const crouchLean = crouch * this.facing * 6 * DEG;
+-      const torsoAngle = -Math.PI / 2 + breathe + lean + counterLean + crouchLean;
+-      const hip = root.clone();
+-      const spineLength = L.spine * (1 - crouch * 0.13 + jump.squash * 0.035);
+-      const chest = Vec2.add(hip, Vec2.fromAngle(torsoAngle, spineLength));
+-      const neck = Vec2.add(chest, Vec2.fromAngle(torsoAngle, L.neck));
+-
+-      const lookVector = Vec2.sub(this.lookTarget, neck);
+-      let headAngle = lookVector.lengthSq() > 2 ? lookVector.angle() : torsoAngle;
+-      const headLimit = 54 * DEG;
+-      const headOffset = clamp(normalizeAngle(headAngle - torsoAngle), -headLimit, headLimit);
+-      headAngle = torsoAngle + headOffset;
+-      const head = Vec2.add(neck, Vec2.fromAngle(headAngle, L.head * 0.72));
+-
+-      const side = perpendicular(torsoAngle);
+-      const shoulderL = Vec2.add(chest, Vec2.mul(side, -L.shoulderWidth / 2));
+-      const shoulderR = Vec2.add(chest, Vec2.mul(side, L.shoulderWidth / 2));
+-      const hipL = Vec2.add(hip, Vec2.mul(side, -L.hipWidth / 2));
+-      const hipR = Vec2.add(hip, Vec2.mul(side, L.hipWidth / 2));
+-
+-      const armReach = L.upperArm + L.forearm - 12 * this.scale;
+-      const armSwingPx = (actionIsRun ? 34 : 24) * this.energy * this.scale * motion;
+-      const armDrop = armReach * (0.86 - crouch * 0.08);
+-      const idleArmDrift = (1 - motion) * Math.sin(this.time * 1.15) * 5.5 * this.scale;
+-
+-      // As mãos são posicionadas em coordenadas relativas ao corpo e espelhadas por "facing".
+-      // Isso impede que a caminhada para a esquerda mantenha o braço/perna com lógica de direita.
+-      const rightDefault = Vec2.add(shoulderR, new Vec2(
+-        -this.facing * gait.sin * armSwingPx + this.facing * 7 * this.scale + this.facing * idleArmDrift,
+-        armDrop + Math.abs(gait.cos) * 4.0 * this.scale * motion
+-      ));
+-      const leftDefault = Vec2.add(shoulderL, new Vec2(
+-        this.facing * gait.sin * armSwingPx - this.facing * 7 * this.scale - this.facing * idleArmDrift,
+-        armDrop + Math.abs(Math.sin(gait.phase + Math.PI)) * 2.4 * this.scale * motion
+-      ));
+-
+-      const wave = waveAmount(this.gesture);
+-      const waveSide = this.gesture?.name === 'waveLeft' ? 'left' : 'right';
+-      const wavePulse = Math.sin(this.time * 18) * 12 * this.scale;
+-      const rightWaveTarget = Vec2.add(shoulderR, new Vec2((40 + wavePulse * 0.15) * this.scale * this.facing, (-74 - Math.abs(wavePulse)) * this.scale));
+-      const leftWaveTarget = Vec2.add(shoulderL, new Vec2((40 + wavePulse * 0.15) * this.scale * this.facing, (-74 - Math.abs(wavePulse)) * this.scale));
+-      const handRTarget = this.reachRight ? this.limitTarget(shoulderR, this.smoothedTarget, L.upperArm + L.forearm - 2) : rightDefault;
+-      const mirroredTarget = new Vec2(this.position.x - (this.smoothedTarget.x - this.position.x), this.smoothedTarget.y);
+-      const handLTarget = this.reachLeft ? this.limitTarget(shoulderL, mirroredTarget, L.upperArm + L.forearm - 2) : leftDefault;
+-
+-      const finalRightTarget = wave > 0 && waveSide === 'right' ? Vec2.lerp(handRTarget, rightWaveTarget, wave) : handRTarget;
+-      const finalLeftTarget = wave > 0 && waveSide === 'left' ? Vec2.lerp(handLTarget, leftWaveTarget, wave) : handLTarget;
+-
+-      // Pole vectors: cada cotovelo tem uma direção preferida de dobra.
+-      // Isso evita a inversão visual em que os cotovelos dobravam para dentro ao virar o boneco.
+-      const armRPole = Vec2.add(shoulderR, Vec2.add(Vec2.mul(side, L.shoulderWidth * 1.05), new Vec2(-this.facing * 24 * this.scale, 42 * this.scale)));
+-      const armLPole = Vec2.add(shoulderL, Vec2.add(Vec2.mul(side, -L.shoulderWidth * 1.05), new Vec2(-this.facing * 24 * this.scale, 42 * this.scale)));
+-      const armR = solveTwoBone(shoulderR, finalRightTarget, L.upperArm, L.forearm, -this.facing, armRPole);
+-      const armL = solveTwoBone(shoulderL, finalLeftTarget, L.upperArm, L.forearm, this.facing, armLPole);
+-
+-      const stride = (actionIsRun ? 48 : 32) * this.energy * this.scale * motion;
+-      const lift = (actionIsRun ? 31 : 19) * this.energy * this.scale * motion;
+-      const stanceWidth = L.hipWidth * 0.36;
+-
+-      const footOnCycle = (hipJoint, sideSign, phase) => {
+-        const swing = Math.max(0, Math.sin(phase));
+-
+-        // Correção importante do ciclo de marcha:
+-        // - Na fase aérea (sin > 0), o pé precisa viajar de trás para frente.
+-        // - Na fase de apoio (sin <= 0), o pé fica no chão e passa de frente para trás
+-        //   em relação ao corpo, compensando o avanço do quadril.
+-        //
+-        // A versão anterior usava +cos(phase). Isso fazia o pé levantado se mover
+-        // de frente para trás, criando a impressão de que o personagem caminhava
+-        // "para trás" apesar de o corpo e os joelhos apontarem corretamente.
+-        const strideProgress = -Math.cos(phase);
+-        const x = hip.x + sideSign * stanceWidth + this.facing * strideProgress * stride;
+-        const y = this.groundY - swing * lift;
+-        const groundTarget = new Vec2(x, y);
+-        const relaxedAir = Vec2.add(hipJoint, new Vec2(sideSign * 10 * this.scale, legTotal * (0.73 + jump.squash * 0.05)));
+-        const airborne = clamp(jump.air, 0, 1);
+-        return Vec2.lerp(groundTarget, relaxedAir, airborne);
+-      };
+-
+-      let footRTarget = footOnCycle(hipR, 1, gait.legRPhase);
+-      let footLTarget = footOnCycle(hipL, -1, gait.legLPhase);
+-
+-      if (!this.footLock) {
+-        footRTarget = Vec2.add(hipR, new Vec2(14 * this.scale, legTotal * 0.76));
+-        footLTarget = Vec2.add(hipL, new Vec2(-14 * this.scale, legTotal * 0.76));
+-      }
+-
+-      if (crouch > 0.01) {
+-        const crouchR = new Vec2(hip.x + 28 * this.scale, this.groundY);
+-        const crouchL = new Vec2(hip.x - 28 * this.scale, this.groundY);
+-        footRTarget = Vec2.lerp(footRTarget, crouchR, crouch);
+-        footLTarget = Vec2.lerp(footLTarget, crouchL, crouch);
+-      }
+-
+-      // Pole vectors das pernas: os joelhos sempre preferem dobrar para a frente do personagem.
+-      // Sem isso, a solução de dois ossos pode escolher o outro lado da cadeia e criar o efeito de "joelho invertido".
+-      const kneePoleR = Vec2.add(hipR, new Vec2(this.facing * 68 * this.scale, 36 * this.scale));
+-      const kneePoleL = Vec2.add(hipL, new Vec2(this.facing * 68 * this.scale, 36 * this.scale));
+-      const legR = solveTwoBone(hipR, footRTarget, L.upperLeg, L.lowerLeg, this.facing, kneePoleR);
+-      const legL = solveTwoBone(hipL, footLTarget, L.upperLeg, L.lowerLeg, this.facing, kneePoleL);
+-
+-      const joints = {
+-        hip,
+-        chest,
+-        neck,
+-        head,
+-        shoulderL,
+-        shoulderR,
+-        elbowL: armL.mid,
+-        handL: armL.end,
+-        elbowR: armR.mid,
+-        handR: armR.end,
+-        hipL,
+-        hipR,
+-        kneeL: legL.mid,
+-        footL: legL.end,
+-        kneeR: legR.mid,
+-        footR: legR.end,
+-      };
+-
+-      this.joints.clear();
+-      for (const [name, point] of Object.entries(joints)) this.joints.set(name, point);
+-
+-      this.bones = [
+-        ['hipL', 'kneeL'],
+-        ['kneeL', 'footL'],
+-        ['shoulderL', 'elbowL'],
+-        ['elbowL', 'handL'],
+-        ['hip', 'chest'],
+-        ['chest', 'neck'],
+-        ['hipR', 'kneeR'],
+-        ['kneeR', 'footR'],
+-        ['shoulderR', 'elbowR'],
+-        ['elbowR', 'handR'],
+-      ];
+-
+-      return { joints, bones: this.bones, headAngle, torsoAngle, jump, crouch, gait, motion };
+-    }
+-
+-    limitTarget(root, target, maxDistance) {
+-      const delta = Vec2.sub(target, root);
+-      const distance = delta.length();
+-      if (distance <= maxDistance) return target.clone();
+-      return Vec2.add(root, delta.normalize().mul(maxDistance));
+-    }
+-
+-    scaledLengths() {
+-      const out = {};
+-      for (const [key, value] of Object.entries(this.lengths)) out[key] = value * this.scale;
+-      return out;
+-    }
+-
+-    set gesture(value) {
+-      this._gesture = value;
+-    }
+-
+-    get gesture() {
+-      return this._gesture ?? null;
+-    }
+-  }
+-
+-  class CanvasRenderer {
+-    constructor(canvas) {
+-      if (!canvas) throw new Error('Canvas #stage não encontrado.');
+-      this.canvas = canvas;
+-      this.ctx = canvas.getContext('2d');
+-      if (!this.ctx) throw new Error('Não foi possível obter o contexto 2D do canvas.');
+-      this.width = canvas.width;
+-      this.height = canvas.height;
+-      this.dpr = 1;
+-      this.theme = {
+-        bone: '#f7fbff',
+-        boneCore: '#ffffff',
+-        boneShadow: 'rgba(1, 8, 24, 0.82)',
+-        joint: '#7ddcff',
+-        target: '#ffd166',
+-        floor: 'rgba(150, 205, 255, 0.35)',
+-        grid: 'rgba(150, 205, 255, 0.07)',
+-      };
+-      this.resize();
+-      window.addEventListener('resize', () => this.resize(), { passive: true });
+-    }
+-
+-    resize() {
+-      const rect = this.canvas.getBoundingClientRect();
+-      const cssWidth = Math.max(1, rect.width || this.canvas.clientWidth || 960);
+-      const cssHeight = Math.max(1, rect.height || this.canvas.clientHeight || 560);
+-      this.dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+-      const nextWidth = Math.floor(cssWidth * this.dpr);
+-      const nextHeight = Math.floor(cssHeight * this.dpr);
+-      if (this.canvas.width !== nextWidth) this.canvas.width = nextWidth;
+-      if (this.canvas.height !== nextHeight) this.canvas.height = nextHeight;
+-      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+-      this.width = cssWidth;
+-      this.height = cssHeight;
+-    }
+-
+-    clear() {
+-      const ctx = this.ctx;
+-      ctx.clearRect(0, 0, this.width, this.height);
+-      const grd = ctx.createLinearGradient(0, 0, 0, this.height);
+-      grd.addColorStop(0, '#071122');
+-      grd.addColorStop(0.54, '#050b18');
+-      grd.addColorStop(1, '#030712');
+-      ctx.fillStyle = grd;
+-      ctx.fillRect(0, 0, this.width, this.height);
+-    }
+-
+-    drawWorld(groundY) {
+-      const ctx = this.ctx;
+-      ctx.save();
+-      ctx.strokeStyle = this.theme.grid;
+-      ctx.lineWidth = 1;
+-      const spacing = 42;
+-      for (let x = -spacing; x < this.width + spacing; x += spacing) {
+-        ctx.beginPath();
+-        ctx.moveTo(x, 0);
+-        ctx.lineTo(x, this.height);
+-        ctx.stroke();
+-      }
+-      for (let y = -spacing; y < this.height + spacing; y += spacing) {
+-        ctx.beginPath();
+-        ctx.moveTo(0, y);
+-        ctx.lineTo(this.width, y);
+-        ctx.stroke();
+-      }
+-      ctx.strokeStyle = this.theme.floor;
+-      ctx.lineWidth = 2;
+-      ctx.setLineDash([14, 10]);
+-      ctx.beginPath();
+-      ctx.moveTo(0, groundY);
+-      ctx.lineTo(this.width, groundY);
+-      ctx.stroke();
+-      ctx.setLineDash([]);
+-      const floorGrad = ctx.createLinearGradient(0, groundY, 0, this.height);
+-      floorGrad.addColorStop(0, 'rgba(125, 220, 255, 0.10)');
+-      floorGrad.addColorStop(1, 'rgba(125, 220, 255, 0.015)');
+-      ctx.fillStyle = floorGrad;
+-      ctx.fillRect(0, groundY + 1, this.width, this.height - groundY);
+-      ctx.restore();
+-    }
+-
+-    drawStick(figure) {
+-      const pose = figure.lastPose;
+-      if (!pose) return;
+-      const joints = pose.joints;
+-      const ctx = this.ctx;
+-      ctx.save();
+-      this.drawShadow(joints);
+-      ctx.lineCap = 'round';
+-      ctx.lineJoin = 'round';
+-
+-      ctx.strokeStyle = this.theme.boneShadow;
+-      ctx.lineWidth = Math.max(13.5, 13.5 * figure.scale);
+-      for (const [a, b] of figure.bones) this.line(joints[a], joints[b]);
+-
+-      ctx.strokeStyle = this.theme.bone;
+-      ctx.lineWidth = Math.max(7.2, 7.2 * figure.scale);
+-      for (const [a, b] of figure.bones) this.line(joints[a], joints[b]);
+-
+-      ctx.strokeStyle = this.theme.boneCore;
+-      ctx.globalAlpha = 0.82;
+-      ctx.lineWidth = Math.max(2.4, 2.4 * figure.scale);
+-      for (const [a, b] of figure.bones) this.line(joints[a], joints[b]);
+-      ctx.globalAlpha = 1;
+-
+-      this.drawHead(joints.neck, joints.head, pose.headAngle, figure.scale);
+-      this.drawHandsAndFeet(joints, figure.scale);
+-      if (figure.debug) this.drawDebug(figure);
+-      ctx.restore();
+-    }
+-
+-    drawShadow(joints) {
+-      const ctx = this.ctx;
+-      const feet = [joints.footL, joints.footR];
+-      const center = new Vec2((feet[0].x + feet[1].x) / 2, Math.max(feet[0].y, feet[1].y) + 8);
+-      ctx.save();
+-      ctx.fillStyle = 'rgba(0,0,0,0.42)';
+-      ctx.beginPath();
+-      ctx.ellipse(center.x, center.y, 64, 11, 0, 0, TAU);
+-      ctx.fill();
+-      ctx.restore();
+-    }
+-
+-    drawHead(neck, head, angle, scale) {
+-      const ctx = this.ctx;
+-      const radius = 21 * scale;
+-      ctx.save();
+-      ctx.fillStyle = '#071122';
+-      ctx.strokeStyle = this.theme.bone;
+-      ctx.lineWidth = Math.max(5, 5 * scale);
+-      ctx.beginPath();
+-      ctx.arc(head.x, head.y, radius, 0, TAU);
+-      ctx.fill();
+-      ctx.stroke();
+-
+-      const eye = Vec2.add(head, Vec2.fromAngle(angle, radius * 0.42));
+-      ctx.fillStyle = '#ffd166';
+-      ctx.beginPath();
+-      ctx.arc(eye.x, eye.y, Math.max(3.2, 3.2 * scale), 0, TAU);
+-      ctx.fill();
+-      ctx.restore();
+-    }
+-
+-    drawHandsAndFeet(joints, scale) {
+-      const ctx = this.ctx;
+-      ctx.save();
+-      ctx.fillStyle = '#071122';
+-      ctx.strokeStyle = this.theme.bone;
+-      ctx.lineWidth = Math.max(3.5, 3.5 * scale);
+-
+-      for (const key of ['handL', 'handR']) {
+-        const p = joints[key];
+-        ctx.beginPath();
+-        ctx.arc(p.x, p.y, 7.5 * scale, 0, TAU);
+-        ctx.fill();
+-        ctx.stroke();
+-      }
+-
+-      ctx.lineWidth = Math.max(5, 5 * scale);
+-      for (const key of ['footL', 'footR']) {
+-        const p = joints[key];
+-        ctx.beginPath();
+-        ctx.moveTo(p.x - 13 * scale, p.y);
+-        ctx.lineTo(p.x + 13 * scale, p.y);
+-        ctx.stroke();
+-      }
+-      ctx.restore();
+-    }
+-
+-    drawDebug(figure) {
+-      const ctx = this.ctx;
+-      const joints = figure.lastPose.joints;
+-      ctx.save();
+-      ctx.fillStyle = this.theme.joint;
+-      ctx.strokeStyle = 'rgba(120, 215, 255, 0.42)';
+-      ctx.lineWidth = 1;
+-      ctx.font = '11px system-ui, sans-serif';
+-      for (const [name, p] of Object.entries(joints)) {
+-        ctx.beginPath();
+-        ctx.arc(p.x, p.y, 4, 0, TAU);
+-        ctx.fill();
+-        ctx.strokeText(name, p.x + 7, p.y - 5);
+-      }
+-      this.drawTarget(figure.smoothedTarget, 'IK');
+-      this.drawTarget(figure.lookTarget, 'LOOK');
+-      ctx.restore();
+-    }
+-
+-    drawTarget(p, label = '') {
+-      const ctx = this.ctx;
+-      ctx.save();
+-      ctx.strokeStyle = this.theme.target;
+-      ctx.fillStyle = 'rgba(255, 209, 102, 0.12)';
+-      ctx.lineWidth = 2;
+-      ctx.beginPath();
+-      ctx.arc(p.x, p.y, 14, 0, TAU);
+-      ctx.fill();
+-      ctx.stroke();
+-      ctx.beginPath();
+-      ctx.moveTo(p.x - 20, p.y);
+-      ctx.lineTo(p.x + 20, p.y);
+-      ctx.moveTo(p.x, p.y - 20);
+-      ctx.lineTo(p.x, p.y + 20);
+-      ctx.stroke();
+-      if (label) ctx.fillText(label, p.x + 18, p.y - 18);
+-      ctx.restore();
+-    }
+-
+-    line(a, b) {
+-      if (!a || !b) return;
+-      const ctx = this.ctx;
+-      ctx.beginPath();
+-      ctx.moveTo(a.x, a.y);
+-      ctx.lineTo(b.x, b.y);
+-      ctx.stroke();
+-    }
+-  }
+-
+-  class InputController {
+-    constructor(canvas, figure, timeline) {
+-      this.canvas = canvas;
+-      this.figure = figure;
+-      this.timeline = timeline;
+-      this.keys = new Set();
+-      this.pointer = { x: 0, y: 0, active: false };
+-      this.bind();
+-    }
+-
+-    bind() {
+-      window.addEventListener('keydown', (event) => {
+-        const key = event.key.toLowerCase();
+-        this.keys.add(key);
+-        if ([' ', 'w', 'a', 's', 'd', 'arrowleft', 'arrowright', 'arrowdown'].includes(key)) event.preventDefault();
+-        if (key === 'w') this.figure.jump();
+-        if (key === ' ') this.timeline.trigger('waveRight', 1.0);
+-      });
+-
+-      window.addEventListener('keyup', (event) => {
+-        this.keys.delete(event.key.toLowerCase());
+-      });
+-
+-      const updatePointer = (event) => {
+-        const rect = this.canvas.getBoundingClientRect();
+-        this.pointer.x = event.clientX - rect.left;
+-        this.pointer.y = event.clientY - rect.top;
+-        this.pointer.active = true;
+-        this.figure.target.set(this.pointer.x, this.pointer.y);
+-      };
+-
+-      this.canvas.addEventListener('pointermove', updatePointer);
+-      this.canvas.addEventListener('pointerdown', (event) => {
+-        updatePointer(event);
+-        this.canvas.setPointerCapture?.(event.pointerId);
+-      });
+-      this.canvas.addEventListener('pointerleave', () => {
+-        this.pointer.active = false;
+-      });
+-    }
+-
+-    update() {
+-      const left = this.keys.has('a') || this.keys.has('arrowleft');
+-      const right = this.keys.has('d') || this.keys.has('arrowright');
+-      const run = this.keys.has('shift');
+-      const crouch = this.keys.has('s') || this.keys.has('arrowdown');
+-      const horizontal = (right ? 1 : 0) - (left ? 1 : 0);
+-
+-      if (crouch) {
+-        this.figure.setAction('crouch');
+-        this.figure.velocity.x = 0;
+-      } else {
+-        if (this.figure.action === 'crouch' && horizontal === 0) this.figure.setAction('idle');
+-        this.figure.move(horizontal, run);
+-      }
+-    }
+-  }
+-
+-  function boot() {
+-    const canvas = document.querySelector('#stage');
+-    const renderer = new CanvasRenderer(canvas);
+-    const timeline = new ActionTimeline();
+-    const figure = new StickFigure({
+-      x: renderer.width * 0.5,
+-      y: renderer.height * 0.78,
+-      groundY: renderer.height * 0.78,
+-    });
+-    const input = new InputController(canvas, figure, timeline);
+-
+-    const statusMode = document.querySelector('#statusMode');
+-    const statusFps = document.querySelector('#statusFps');
+-    const buttons = Array.from(document.querySelectorAll('[data-action]'));
+-    const reachToggle = document.querySelector('#reachToggle');
+-    const leftReachToggle = document.querySelector('#leftReachToggle');
+-    const footLockToggle = document.querySelector('#footLockToggle');
+-    const debugToggle = document.querySelector('#debugToggle');
+-    const energySlider = document.querySelector('#energySlider');
+-    const scaleSlider = document.querySelector('#scaleSlider');
+-    const smoothSlider = document.querySelector('#smoothSlider');
+-    const resetBtn = document.querySelector('#resetBtn');
+-
+-    function markActive(action) {
+-      for (const button of buttons) {
+-        const a = button.dataset.action;
+-        const active = a === action || (a === 'waveRight' && timeline.activeGesture?.name === 'waveRight');
+-        button.classList.toggle('is-active', active);
+-      }
+-    }
+-
+-    function modeLabel(mode) {
+-      const labels = {
+-        idle: 'Idle',
+-        walk: 'Andando',
+-        run: 'Correndo',
+-        crouch: 'Agachado',
+-        waveRight: 'Acenando',
+-        waveLeft: 'Acenando',
+-        jump: 'Pulando',
+-      };
+-      return labels[mode] ?? mode;
+-    }
+-
+-    function resetFigure() {
+-      figure.reset(renderer.width * 0.5, renderer.height * 0.78);
+-      figure.target.set(renderer.width * 0.62, renderer.height * 0.35);
+-      timeline.set('idle');
+-      figure.setAction('idle');
+-      markActive('idle');
+-    }
+-
+-    function createPublicApi(actor, actions) {
+-      return {
+-        actor,
+-        play(name) {
+-          actions.set(name);
+-          actor.setAction(name);
+-          return this;
+-        },
+-        jump() {
+-          actor.jump();
+-          return this;
+-        },
+-        wave(side = 'right') {
+-          actions.trigger(side === 'left' ? 'waveLeft' : 'waveRight', 1.0);
+-          return this;
+-        },
+-        reach(hand, x, y) {
+-          actor.target.set(x, y);
+-          actor.reachRight = hand === 'rightHand' || hand === 'both';
+-          actor.reachLeft = hand === 'leftHand' || hand === 'both';
+-          return this;
+-        },
+-        lookAt(x, y) {
+-          actor.target.set(x, y);
+-          return this;
+-        },
+-        setEnergy(value) {
+-          actor.energy = Number(value);
+-          return this;
+-        },
+-        setScale(value) {
+-          actor.scale = Number(value);
+-          return this;
+-        },
+-        setDebug(value) {
+-          actor.debug = Boolean(value);
+-          return this;
+-        },
+-      };
+-    }
+-
+-    buttons.forEach((button) => {
+-      button.addEventListener('click', () => {
+-        const action = button.dataset.action;
+-        if (action === 'jump') {
+-          figure.jump();
+-        } else if (action === 'waveRight') {
+-          timeline.trigger('waveRight', 1.0);
+-        } else if (action === 'crouch' && figure.action === 'crouch') {
+-          timeline.set('idle');
+-          figure.setAction('idle');
+-        } else {
+-          timeline.set(action);
+-          figure.setAction(action);
+-        }
+-        markActive(action);
+-      });
+-    });
+-
+-    reachToggle.addEventListener('input', () => { figure.reachRight = reachToggle.checked; });
+-    leftReachToggle.addEventListener('input', () => { figure.reachLeft = leftReachToggle.checked; });
+-    footLockToggle.addEventListener('input', () => { figure.footLock = footLockToggle.checked; });
+-    debugToggle.addEventListener('input', () => { figure.debug = debugToggle.checked; });
+-    energySlider.addEventListener('input', () => { figure.energy = Number(energySlider.value); });
+-    scaleSlider.addEventListener('input', () => { figure.scale = Number(scaleSlider.value); });
+-    smoothSlider.addEventListener('input', () => { figure.smoothing = Number(smoothSlider.value); });
+-    resetBtn.addEventListener('click', resetFigure);
+-
+-    let last = performance.now();
+-    let fpsTime = 0;
+-    let fpsFrames = 0;
+-    let frameCount = 0;
+-
+-    function updateStatus(dt) {
+-      fpsTime += dt;
+-      fpsFrames += 1;
+-      if (fpsTime >= 0.35) {
+-        statusFps.textContent = String(Math.round(fpsFrames / fpsTime));
+-        fpsTime = 0;
+-        fpsFrames = 0;
+-      }
+-      const mode = timeline.activeGesture?.name ?? figure.action;
+-      statusMode.textContent = modeLabel(mode);
+-      markActive(figure.action);
+-    }
+-
+-    function frame(now) {
+-      const dt = Math.min(0.033, (now - last) / 1000 || 0.016);
+-      last = now;
+-      renderer.resize();
+-      figure.groundY = renderer.height * 0.78;
+-
+-      if (!input.pointer.active) {
+-        figure.target.set(
+-          renderer.width * 0.58 + Math.sin(now * 0.001) * 90,
+-          renderer.height * 0.38 + Math.cos(now * 0.0013) * 36
+-        );
+-      }
+-
+-      input.update();
+-      timeline.update(dt);
+-      figure.gesture = timeline.activeGesture;
+-      figure.update(dt, { left: 80, right: renderer.width - 80 });
+-
+-      renderer.clear();
+-      renderer.drawWorld(figure.groundY);
+-      renderer.drawStick(figure);
+-
+-      frameCount += 1;
+-      if (frameCount === 1) statusFps.textContent = '...';
+-      updateStatus(dt);
+-      requestAnimationFrame(frame);
+-    }
+-
+-    window.StickEngineDemo = createPublicApi(figure, timeline);
+-    resetFigure();
+-    requestAnimationFrame(frame);
+-  }
+-
+-  function showBootError(error) {
+-    console.error(error);
+-    const box = document.querySelector('#bootError');
+-    const mode = document.querySelector('#statusMode');
+-    if (mode) mode.textContent = 'Erro';
+-    if (box) {
+-      box.hidden = false;
+-      box.textContent = `Erro ao iniciar a Stick Engine: ${error?.message || error}. Abra o console do navegador para detalhes.`;
+-    }
+-  }
+-
+-  if (document.readyState === 'loading') {
+-    document.addEventListener('DOMContentLoaded', () => {
+-      try { boot(); } catch (error) { showBootError(error); }
+-    });
+-  } else {
+-    try { boot(); } catch (error) { showBootError(error); }
+-  }
+-})();
