@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stick Engine Lab</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="layout">
+    <aside class="panel">
+      <h1>Stick Engine Lab</h1>
+      <p class="muted">Fases 1-4: runtime, poses/ações, editor visual básico e engine reutilizável.</p>
+
+      <section>
+        <h2>Ações</h2>
+        <div class="grid">
+          <button data-action="idle">Idle</button>
+          <button data-action="walk">Walk</button>
+          <button data-action="run">Run</button>
+          <button data-action="jump">Jump</button>
+          <button data-action="crouch">Crouch</button>
+          <button data-action="wave">Wave (overlay)</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Personagens</h2>
+        <div class="row">
+          <button id="addCharacterBtn">+ Add</button>
+          <button id="removeCharacterBtn">- Remove</button>
+        </div>
+        <select id="characterSelect"></select>
+      </section>
+
+      <section>
+        <h2>Parâmetros</h2>
+        <label>Energia <input id="energy" type="range" min="0" max="1" step="0.01" value="0.72" /></label>
+        <label>Escala <input id="scale" type="range" min="0.6" max="1.6" step="0.01" value="1" /></label>
+        <label>Suavização <input id="smoothing" type="range" min="0.03" max="0.45" step="0.01" value="0.18" /></label>
+      </section>
+
+      <section>
+        <h2>Editor de Poses</h2>
+        <label><input id="editorToggle" type="checkbox" /> Ativar drag de juntas</label>
+        <label>Pose atual
+          <select id="poseSelect"></select>
+        </label>
+        <div class="row">
+          <button id="savePoseBtn">Salvar pose</button>
+          <button id="previewPoseBtn">Prévia pose</button>
+        </div>
+        <textarea id="poseJson" rows="10"></textarea>
+        <div class="row">
+          <button id="loadPoseBtn">Carregar JSON</button>
+          <button id="exportPoseBtn">Exportar JSON</button>
+        </div>
+      </section>
+
+      <section class="status">
+        <h2>Status</h2>
+        <div id="status"></div>
+      </section>
+    </aside>
+
+    <section class="stage">
+      <canvas id="stage" width="1100" height="700"></canvas>
+    </section>
+  </main>
+
+  <script src="../engine/stick-engine.js"></script>
+  <script src="./demo.js"></script>
+</body>
+</html>

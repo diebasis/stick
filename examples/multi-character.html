@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Exemplo - Múltiplos Bonecos</title>
+  <style>
+    body { margin: 0; background: #060c18; color: #fff; font-family: Inter, system-ui, sans-serif; }
+    canvas { width: 100vw; height: 100vh; display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="stage" width="1200" height="700"></canvas>
+  <script src="../engine/stick-engine.js"></script>
+  <script>
+    const engine = StickEngine.create(document.querySelector('#stage'));
+    const a = engine.getCharacter('hero');
+    const b = engine.addCharacter({ id: 'npc-1', x: 350, y: 540, scale: 0.95 });
+    const c = engine.addCharacter({ id: 'npc-2', x: 760, y: 540, scale: 1.05 });
+
+    engine.play('walk', a.id);
+    engine.play('run', b.id);
+    engine.play('crouch', c.id);
+    engine.overlay('wave', c.id);
+
+    engine.onBeforeFrame = ({ now }) => {
+      engine.lookAt(600 + Math.sin(now * 0.001) * 260, 250 + Math.cos(now * 0.0012) * 90, a.id);
+      b.facing = -1;
+      c.facing = 1;
+    };
+
+    engine.setDebug(true, a.id);
+    engine.start();
+    window.engine = engine;
+  </script>
+</body>
+</html>
